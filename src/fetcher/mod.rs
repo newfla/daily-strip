@@ -1,15 +1,14 @@
-use anyhow::{bail, Result};
+use anyhow::{bail, Ok, Result};
 use async_trait::async_trait;
 use rand::{thread_rng, Rng};
 use rss::Channel;
 use scraper::{Element, Html, Selector};
 
-use crate::{Content, Fetcher, FetcherErrors, Sites, Strip};
-
+use crate::{Fetcher, FetcherErrors, Sites, Strip, Url};
 
 struct FetcherImpl {
     site: Sites,
-    posts: Option<Vec<Content>>,
+    posts: Option<Vec<Strip>>,
 }
 
 #[async_trait]
@@ -38,13 +37,6 @@ impl Fetcher for FetcherImpl {
         }
     }
 
-    fn last_content(&self) -> Option<Content> {
-        match self.posts.as_ref() {
-            Some(data) => data.first().cloned(),
-            None => None
-        }
-    }
-
     async fn random(&self) -> Result<Strip> {
         match self.site {
             Sites::TurnoffUs => self.random_turnoff_us().await,
@@ -56,13 +48,6 @@ impl Fetcher for FetcherImpl {
             Sites::DinosaurComics => self.random_dinosaur_comics().await,
         }
     }
-
-    fn random_content(&self) -> Option<Content> {
-        let mut random = thread_rng();
-        self.posts
-            .as_ref()
-            .and_then(|data| data.get(random.gen_range(0..data.len()))).cloned()
-    }
 }
 
 pub async fn build_fetcher(site: Sites) -> Option<impl Fetcher> {
@@ -72,9 +57,23 @@ pub async fn build_fetcher(site: Sites) -> Option<impl Fetcher> {
 }
 
 impl FetcherImpl {
+    fn last_content(&self) -> Option<Strip> {
+        match self.posts.as_ref() {
+            Some(data) => data.first().cloned(),
+            None => None,
+        }
+    }
+
+    fn random_content(&self) -> Option<Strip> {
+        let mut random = thread_rng();
+        self.posts
+            .as_ref()
+            .and_then(|data| data.get(random.gen_range(0..data.len())))
+            .cloned()
+    }
 
     async fn reload_turnoff_us(&mut self) -> Result<()> {
-        let data = reqwest::get(self.site.to_string() + "/all")
+        let data = reqwest::get(self.site.fetch_url() + "/all")
             .await?
             .text()
             .await?;
@@ -89,9 +88,9 @@ impl FetcherImpl {
                 )
             })
             .filter(|(title, url)| !title.is_empty() && url.is_some())
-            .map(|(title, url)| Content {
+            .map(|(title, url)| Strip {
                 title,
-                url: self.site.to_string() + url.unwrap(),
+                url: self.site.fetch_url() + url.unwrap(),
             })
             .collect();
 
@@ -105,7 +104,7 @@ impl FetcherImpl {
     }
 
     async fn reload_monkey_user(&mut self) -> Result<()> {
-        let data = reqwest::get(self.site.to_string()).await?.bytes().await?;
+        let data = reqwest::get(self.site.fetch_url()).await?.bytes().await?;
         let data: Vec<_> = Channel::read_from(&data[..])?
             .items
             .into_iter()
@@ -114,7 +113,7 @@ impl FetcherImpl {
                 title.as_ref().is_some_and(|title| !title.is_empty())
                     && link.as_ref().is_some_and(|link| !link.is_empty())
             })
-            .map(|(name, link)| Content {
+            .map(|(name, link)| Strip {
                 title: name.unwrap(),
                 url: link.unwrap(),
             })
@@ -129,7 +128,7 @@ impl FetcherImpl {
     }
 
     async fn reload_oglaf(&mut self) -> Result<()> {
-        let data = reqwest::get(self.site.to_string()).await?.bytes().await?;
+        let data = reqwest::get(self.site.fetch_url()).await?.bytes().await?;
         let data: Vec<_> = Channel::read_from(&data[..])?
             .items
             .into_iter()
@@ -147,7 +146,7 @@ impl FetcherImpl {
                 )
             })
             .filter(|(_, url)| url.is_some())
-            .map(|(name, url)| Content {
+            .map(|(name, url)| Strip {
                 title: name,
                 url: url.unwrap(),
             })
@@ -162,7 +161,7 @@ impl FetcherImpl {
     }
 
     async fn reload_dinosaur_comics(&mut self) -> Result<()> {
-        let data = reqwest::get(self.site.to_string() + "/archive.php")
+        let data = reqwest::get(self.site.fetch_url() + "/archive.php")
             .await?
             .text()
             .await?;
@@ -183,7 +182,7 @@ impl FetcherImpl {
                 )
             })
             .filter(|(title, url)| !title.is_empty() && url.is_some())
-            .map(|(title, url)| Content {
+            .map(|(title, url)| Strip {
                 title,
                 url: url.unwrap().to_string(),
             })
@@ -199,7 +198,7 @@ impl FetcherImpl {
     }
 
     async fn reload_cornet_comics(&mut self) -> Result<()> {
-        let data = reqwest::get(self.site.to_string()).await?.text().await?;
+        let data = reqwest::get(self.site.fetch_url()).await?.text().await?;
         let frag = Html::parse_document(&data);
         let selector_name = Selector::parse("span a.post-link").unwrap();
         let selector_url = Selector::parse("a.post-link img").unwrap();
@@ -209,9 +208,9 @@ impl FetcherImpl {
             .zip(frag.select(&selector_url))
             .map(|(a_title, img_url)| (a_title.inner_html(), img_url.value().attr("src")))
             .filter(|(title, thumb_url)| !title.is_empty() && thumb_url.is_some())
-            .map(|(name, thumb_url)| Content {
+            .map(|(name, thumb_url)| Strip {
                 title: name.trim().to_string(),
-                url: self.site.to_string()
+                url: self.site.fetch_url()
                     + &thumb_url
                         .unwrap()
                         .to_string()
@@ -229,16 +228,16 @@ impl FetcherImpl {
     }
 
     async fn reload_xkcd(&mut self) -> Result<()> {
-        let data = reqwest::get(self.site.to_string()).await?.text().await?;
+        let data = reqwest::get(self.site.fetch_url()).await?.text().await?;
         let last = self
             .parse_meta_content_blocking(data, "og:url")
             .ok_or(FetcherErrors::Error404)?
             .replace('/', "");
         let mut data = Vec::new();
         for i in (1..(1 + last.parse::<usize>()?)).rev() {
-            data.push(Content {
+            data.push(Strip {
                 title: i.to_string(),
-                url: self.site.to_string() + "/" + &i.to_string(),
+                url: self.site.fetch_url() + "/" + &i.to_string(),
             })
         }
         self.posts = Some(data);
@@ -254,7 +253,7 @@ impl FetcherImpl {
 
     async fn last_generic_strip(&self) -> Result<Strip> {
         match self.last_content().as_ref() {
-            Some(content) => Self::parse_generic_content(content).await,
+            Some(content) => Ok(content.clone()),
             None => bail!(FetcherErrors::Error404),
         }
     }
@@ -289,7 +288,7 @@ impl FetcherImpl {
 
     async fn random_generic_strip(&self) -> Result<Strip> {
         match self.random_content().as_ref() {
-            Some(content) => Self::parse_generic_content(content).await,
+            Some(content) => Ok(content.clone()),
             None => bail!(FetcherErrors::Error404),
         }
     }
@@ -315,60 +314,49 @@ impl FetcherImpl {
         }
     }
 
-    async fn parse_turnoff_us_content(&self, content: &Content) -> Result<Strip> {
+    async fn parse_turnoff_us_content(&self, content: &Strip) -> Result<Strip> {
         let data = reqwest::get(&content.url).await?.text().await?;
         let url = Self::parse_first_occurency_blocking(data, "p img", "src")
             .ok_or(FetcherErrors::Error404)?;
 
-        Self::parse_generic_content(&Content {
+        Ok(Strip {
             title: content.title.to_string(),
-            url: self.site.to_string() + &url,
+            url: self.site.fetch_url() + &url,
         })
-        .await
     }
 
-    async fn parse_xkcd_content(&self, content: &Content) -> Result<Strip> {
+    async fn parse_xkcd_content(&self, content: &Strip) -> Result<Strip> {
         let data = reqwest::get(&content.url).await?.text().await?;
         let url = self
             .parse_meta_content_blocking(data, "og:image")
             .ok_or(FetcherErrors::Error404)?;
 
-        Self::parse_generic_content(&Content {
+        Ok(Strip {
             title: content.title.to_string(),
             url,
         })
-        .await
     }
 
-    async fn parse_oglaf_content(&self, content: &Content) -> Result<Strip> {
+    async fn parse_oglaf_content(&self, content: &Strip) -> Result<Strip> {
         let data = reqwest::get(&content.url).await?.text().await?;
         let url = Self::parse_first_occurency_blocking(data, "#strip", "src")
             .ok_or(FetcherErrors::Error404)?;
 
-        Self::parse_generic_content(&Content {
+        Ok(Strip {
             title: content.title.to_string(),
-            url: self.site.to_string() + &url,
+            url: self.site.fetch_url() + &url,
         })
-        .await
     }
 
-    async fn parse_dinosaur_comics_content(&self, content: &Content) -> Result<Strip> {
+    async fn parse_dinosaur_comics_content(&self, content: &Strip) -> Result<Strip> {
         let data = reqwest::get(&content.url).await?.text().await?;
         let url = Self::parse_first_occurency_blocking(data, "img.comic", "src")
             .ok_or(FetcherErrors::Error404)?;
 
-        Self::parse_generic_content(&Content {
+        Ok(Strip {
             title: content.title.to_string(),
-            url: self.site.to_string() + "/" + &url,
+            url: self.site.fetch_url() + "/" + &url,
         })
-        .await
-    }
-
-    async fn parse_generic_content(content: &Content) -> Result<Strip> {
-        Ok((
-            content.title.clone(),
-            reqwest::get(&content.url).await?.bytes().await?.to_vec(),
-        ))
     }
 
     fn parse_first_occurency_blocking(data: String, selector: &str, attr: &str) -> Option<String> {
@@ -391,7 +379,7 @@ impl FetcherImpl {
             .map(|elem| {
                 elem.attr("content")
                     .unwrap()
-                    .replace(&self.site.to_string(), "")
+                    .replace(&self.site.fetch_url(), "")
             })
             .last()
     }

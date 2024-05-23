@@ -2,9 +2,13 @@ use std::fmt::Display;
 
 use anyhow::Result;
 use async_trait::async_trait;
+use strum_macros::EnumIter;
 use thiserror::Error;
 
 mod fetcher;
+pub use fetcher::build_fetcher;
+
+#[derive(Debug, Clone, Copy, EnumIter, Hash, PartialEq, Eq)]
 /// Supported strip sites
 #[non_exhaustive]
 pub enum Sites {
@@ -17,22 +21,23 @@ pub enum Sites {
     Oglaf,
 }
 
+impl Default for Sites {
+    fn default() -> Self {
+        Self::TurnoffUs
+    }
+}
+
 #[async_trait]
 pub trait Fetcher {
     async fn reload(&mut self) -> Result<()>;
     async fn last(&self) -> Result<Strip>;
     async fn random(&self) -> Result<Strip>;
-    fn last_content(&self) -> Option<Content>;
-    fn random_content(&self) -> Option<Content>;
-
 }
 
-pub type Strip = (String, Vec<u8>);
-
-#[derive(Clone)]
-pub struct Content {
-    title: String,
-    url: String,
+#[derive(Debug, Clone)]
+pub struct Strip {
+    pub title: String,
+    pub url: String,
 }
 
 #[derive(Error, Debug)]
@@ -41,12 +46,13 @@ pub enum FetcherErrors {
     Error404,
 }
 
-trait ToUrl {
-    fn to_url(&self) -> String;
+pub trait Url {
+    fn fetch_url(&self) -> String;
+    fn homepage(&self) -> String;
 }
 
-impl ToUrl for Sites {
-    fn to_url(&self) -> String {
+impl Url for Sites {
+    fn fetch_url(&self) -> String {
         match self {
             // Incomplete RSS feed. Switching to scraping
             Sites::TurnoffUs => "https://turnoff.us",
@@ -63,11 +69,33 @@ impl ToUrl for Sites {
         }
         .to_string()
     }
+
+    fn homepage(&self) -> String {
+        match self {
+            Sites::TurnoffUs => "turnoff.us",
+            Sites::MonkeyUser => "www.monkeyuser.com",
+            Sites::BonkersWorld => "bonkersworld.net",
+            Sites::Goomics => "goomics.net",
+            Sites::Xkcd => "xkcd.com",
+            Sites::DinosaurComics => "qwantz.com",
+            Sites::Oglaf => "oglaf.com",
+        }
+        .to_string()
+    }
 }
 
 impl Display for Sites {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.to_url())
+        let name = match self {
+            Sites::TurnoffUs => "{turnoff.us}",
+            Sites::MonkeyUser => "MonkeyUser",
+            Sites::BonkersWorld => "Bonkers Worls",
+            Sites::Goomics => "Goomics",
+            Sites::Xkcd => "xkcd",
+            Sites::DinosaurComics => "Dinosaur Comics",
+            Sites::Oglaf => "Oglaf.com",
+        };
+        write!(f, "{}", name)
     }
 }
 
