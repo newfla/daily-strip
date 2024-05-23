@@ -104,23 +104,14 @@ impl FetcherImpl {
         let data: Vec<_> = Channel::read_from(&data[..])?
             .items
             .into_iter()
-            .map(|item| (item.title, item.description))
-            .filter(|(title, description)| {
+            .map(|item| (item.title, item.link))
+            .filter(|(title, link)| {
                 title.as_ref().is_some_and(|title| !title.is_empty())
-                    && description
-                        .as_ref()
-                        .is_some_and(|description| !description.is_empty())
+                    && link.as_ref().is_some_and(|link| !link.is_empty())
             })
-            .map(|(name, description)| {
-                (
-                    name.unwrap(),
-                    Self::parse_first_occurency_blocking(description.unwrap(), "p img", "src"),
-                )
-            })
-            .filter(|(_, url)| url.is_some())
-            .map(|(name, url)| Content {
-                title: name,
-                url: url.unwrap(),
+            .map(|(name, link)| Content {
+                title: name.unwrap(),
+                url: link.unwrap(),
             })
             .collect();
         match data.len() {
@@ -251,7 +242,7 @@ impl FetcherImpl {
 
     async fn last_turnoff_us(&mut self) -> Result<Strip> {
         match self.posts.as_ref() {
-            Some(data) => match data.get(0) {
+            Some(data) => match data.first() {
                 Some(content) => self.parse_turnoff_us_content(content).await,
                 None => bail!(FetcherErrors::Error404),
             },
@@ -261,7 +252,7 @@ impl FetcherImpl {
 
     async fn last_generic_strip(&mut self) -> Result<Strip> {
         match self.posts.as_ref() {
-            Some(data) => match data.get(0) {
+            Some(data) => match data.first() {
                 Some(content) => Self::parse_generic_content(content).await,
                 None => bail!(FetcherErrors::Error404),
             },
@@ -271,7 +262,7 @@ impl FetcherImpl {
 
     async fn last_xkcd(&mut self) -> Result<Strip> {
         match self.posts.as_ref() {
-            Some(data) => match data.get(0) {
+            Some(data) => match data.first() {
                 Some(content) => self.parse_xkcd_content(content).await,
                 None => bail!(FetcherErrors::Error404),
             },
@@ -281,7 +272,7 @@ impl FetcherImpl {
 
     async fn last_oglaf(&mut self) -> Result<Strip> {
         match self.posts.as_ref() {
-            Some(data) => match data.get(0) {
+            Some(data) => match data.first() {
                 Some(content) => self.parse_oglaf_content(content).await,
                 None => bail!(FetcherErrors::Error404),
             },
@@ -291,7 +282,7 @@ impl FetcherImpl {
 
     async fn last_dinosaur_comics(&mut self) -> Result<Strip> {
         match self.posts.as_ref() {
-            Some(data) => match data.get(0) {
+            Some(data) => match data.first() {
                 Some(content) => self.parse_dinosaur_comics_content(content).await,
                 None => bail!(FetcherErrors::Error404),
             },

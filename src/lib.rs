@@ -41,7 +41,7 @@ impl ToUrl for Sites {
         match self {
             // Incomplete RSS feed. Switching to scraping
             Sites::TurnoffUs => "https://turnoff.us",
-            Sites::MonkeyUser => "https://www.monkeyuser.com/feed.xml",
+            Sites::MonkeyUser => "https://www.monkeyuser.com/index.xml",
             // Incomplete RSS feed. Switching to scraping
             Sites::BonkersWorld => "https://bonkersworld.net",
             // Incomplete RSS feed. Switching to scraping
