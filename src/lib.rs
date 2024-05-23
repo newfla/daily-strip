@@ -20,11 +20,20 @@ pub enum Sites {
 #[async_trait]
 pub trait Fetcher {
     async fn reload(&mut self) -> Result<()>;
-    async fn last(&mut self) -> Result<Strip>;
-    async fn random(&mut self) -> Result<Strip>;
+    async fn last(&self) -> Result<Strip>;
+    async fn random(&self) -> Result<Strip>;
+    fn last_content(&self) -> Option<Content>;
+    fn random_content(&self) -> Option<Content>;
+
 }
 
 pub type Strip = (String, Vec<u8>);
+
+#[derive(Clone)]
+pub struct Content {
+    title: String,
+    url: String,
+}
 
 #[derive(Error, Debug)]
 pub enum FetcherErrors {
@@ -70,7 +79,7 @@ mod test {
     async fn test_turnoff_us() {
         let fetcher = build_fetcher(crate::Sites::TurnoffUs).await;
         assert!(fetcher.is_some());
-        let mut fetcher = fetcher.unwrap();
+        let fetcher = fetcher.unwrap();
         assert!(fetcher.last().await.is_ok());
         assert!(fetcher.random().await.is_ok());
     }
@@ -79,7 +88,7 @@ mod test {
     async fn test_monkey_user() {
         let fetcher = build_fetcher(crate::Sites::MonkeyUser).await;
         assert!(fetcher.is_some());
-        let mut fetcher = fetcher.unwrap();
+        let fetcher = fetcher.unwrap();
         assert!(fetcher.last().await.is_ok());
         assert!(fetcher.random().await.is_ok());
     }
@@ -88,7 +97,7 @@ mod test {
     async fn test_bonkers_world() {
         let fetcher = build_fetcher(crate::Sites::BonkersWorld).await;
         assert!(fetcher.is_some());
-        let mut fetcher = fetcher.unwrap();
+        let fetcher = fetcher.unwrap();
         assert!(fetcher.last().await.is_ok());
         assert!(fetcher.random().await.is_ok());
     }
@@ -97,7 +106,7 @@ mod test {
     async fn test_goomics() {
         let fetcher = build_fetcher(crate::Sites::Goomics).await;
         assert!(fetcher.is_some());
-        let mut fetcher = fetcher.unwrap();
+        let fetcher = fetcher.unwrap();
         assert!(fetcher.last().await.is_ok());
         assert!(fetcher.random().await.is_ok());
     }
@@ -106,7 +115,7 @@ mod test {
     async fn test_xkcd() {
         let fetcher = build_fetcher(crate::Sites::Xkcd).await;
         assert!(fetcher.is_some());
-        let mut fetcher = fetcher.unwrap();
+        let fetcher = fetcher.unwrap();
         assert!(fetcher.last().await.is_ok());
         assert!(fetcher.random().await.is_ok());
     }
@@ -115,7 +124,7 @@ mod test {
     async fn test_oglaf() {
         let fetcher = build_fetcher(crate::Sites::Oglaf).await;
         assert!(fetcher.is_some());
-        let mut fetcher = fetcher.unwrap();
+        let fetcher = fetcher.unwrap();
         assert!(fetcher.last().await.is_ok());
         assert!(fetcher.random().await.is_ok());
     }
@@ -124,7 +133,7 @@ mod test {
     async fn test_dinosaur_comics() {
         let fetcher = build_fetcher(crate::Sites::DinosaurComics).await;
         assert!(fetcher.is_some());
-        let mut fetcher = fetcher.unwrap();
+        let fetcher = fetcher.unwrap();
         assert!(fetcher.last().await.is_ok());
         assert!(fetcher.random().await.is_ok());
     }

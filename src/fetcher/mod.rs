@@ -4,12 +4,9 @@ use rand::{thread_rng, Rng};
 use rss::Channel;
 use scraper::{Element, Html, Selector};
 
-use crate::{Fetcher, FetcherErrors, Sites, Strip};
+use crate::{Content, Fetcher, FetcherErrors, Sites, Strip};
 
-struct Content {
-    title: String,
-    url: String,
-}
+
 struct FetcherImpl {
     site: Sites,
     posts: Option<Vec<Content>>,
@@ -29,7 +26,7 @@ impl Fetcher for FetcherImpl {
         }
     }
 
-    async fn last(&mut self) -> Result<Strip> {
+    async fn last(&self) -> Result<Strip> {
         match self.site {
             Sites::TurnoffUs => self.last_turnoff_us().await,
             Sites::MonkeyUser => self.last_generic_strip().await,
@@ -41,7 +38,14 @@ impl Fetcher for FetcherImpl {
         }
     }
 
-    async fn random(&mut self) -> Result<Strip> {
+    fn last_content(&self) -> Option<Content> {
+        match self.posts.as_ref() {
+            Some(data) => data.first().cloned(),
+            None => None
+        }
+    }
+
+    async fn random(&self) -> Result<Strip> {
         match self.site {
             Sites::TurnoffUs => self.random_turnoff_us().await,
             Sites::MonkeyUser => self.random_generic_strip().await,
@@ -52,6 +56,13 @@ impl Fetcher for FetcherImpl {
             Sites::DinosaurComics => self.random_dinosaur_comics().await,
         }
     }
+
+    fn random_content(&self) -> Option<Content> {
+        let mut random = thread_rng();
+        self.posts
+            .as_ref()
+            .and_then(|data| data.get(random.gen_range(0..data.len()))).cloned()
+    }
 }
 
 pub async fn build_fetcher(site: Sites) -> Option<impl Fetcher> {
@@ -61,12 +72,6 @@ pub async fn build_fetcher(site: Sites) -> Option<impl Fetcher> {
 }
 
 impl FetcherImpl {
-    fn random_elem(&self) -> Option<&Content> {
-        let mut random = thread_rng();
-        self.posts
-            .as_ref()
-            .and_then(|data| data.get(random.gen_range(0..data.len())))
-    }
 
     async fn reload_turnoff_us(&mut self) -> Result<()> {
         let data = reqwest::get(self.site.to_string() + "/all")
@@ -240,86 +245,71 @@ impl FetcherImpl {
         Ok(())
     }
 
-    async fn last_turnoff_us(&mut self) -> Result<Strip> {
-        match self.posts.as_ref() {
-            Some(data) => match data.first() {
-                Some(content) => self.parse_turnoff_us_content(content).await,
-                None => bail!(FetcherErrors::Error404),
-            },
-            None => bail!(FetcherErrors::Error404),
-        }
-    }
-
-    async fn last_generic_strip(&mut self) -> Result<Strip> {
-        match self.posts.as_ref() {
-            Some(data) => match data.first() {
-                Some(content) => Self::parse_generic_content(content).await,
-                None => bail!(FetcherErrors::Error404),
-            },
-            None => bail!(FetcherErrors::Error404),
-        }
-    }
-
-    async fn last_xkcd(&mut self) -> Result<Strip> {
-        match self.posts.as_ref() {
-            Some(data) => match data.first() {
-                Some(content) => self.parse_xkcd_content(content).await,
-                None => bail!(FetcherErrors::Error404),
-            },
-            None => bail!(FetcherErrors::Error404),
-        }
-    }
-
-    async fn last_oglaf(&mut self) -> Result<Strip> {
-        match self.posts.as_ref() {
-            Some(data) => match data.first() {
-                Some(content) => self.parse_oglaf_content(content).await,
-                None => bail!(FetcherErrors::Error404),
-            },
-            None => bail!(FetcherErrors::Error404),
-        }
-    }
-
-    async fn last_dinosaur_comics(&mut self) -> Result<Strip> {
-        match self.posts.as_ref() {
-            Some(data) => match data.first() {
-                Some(content) => self.parse_dinosaur_comics_content(content).await,
-                None => bail!(FetcherErrors::Error404),
-            },
-            None => bail!(FetcherErrors::Error404),
-        }
-    }
-
-    async fn random_turnoff_us(&mut self) -> Result<Strip> {
-        match self.random_elem() {
+    async fn last_turnoff_us(&self) -> Result<Strip> {
+        match self.last_content().as_ref() {
             Some(content) => self.parse_turnoff_us_content(content).await,
             None => bail!(FetcherErrors::Error404),
         }
     }
 
-    async fn random_generic_strip(&mut self) -> Result<Strip> {
-        match self.random_elem() {
+    async fn last_generic_strip(&self) -> Result<Strip> {
+        match self.last_content().as_ref() {
             Some(content) => Self::parse_generic_content(content).await,
             None => bail!(FetcherErrors::Error404),
         }
     }
 
-    async fn random_xkcd(&mut self) -> Result<Strip> {
-        match self.random_elem() {
+    async fn last_xkcd(&self) -> Result<Strip> {
+        match self.last_content().as_ref() {
             Some(content) => self.parse_xkcd_content(content).await,
             None => bail!(FetcherErrors::Error404),
         }
     }
 
-    async fn random_oglaf(&mut self) -> Result<Strip> {
-        match self.random_elem() {
+    async fn last_oglaf(&self) -> Result<Strip> {
+        match self.last_content().as_ref() {
             Some(content) => self.parse_oglaf_content(content).await,
             None => bail!(FetcherErrors::Error404),
         }
     }
 
-    async fn random_dinosaur_comics(&mut self) -> Result<Strip> {
-        match self.random_elem() {
+    async fn last_dinosaur_comics(&self) -> Result<Strip> {
+        match self.last_content().as_ref() {
+            Some(content) => self.parse_dinosaur_comics_content(content).await,
+            None => bail!(FetcherErrors::Error404),
+        }
+    }
+
+    async fn random_turnoff_us(&self) -> Result<Strip> {
+        match self.random_content().as_ref() {
+            Some(content) => self.parse_turnoff_us_content(content).await,
+            None => bail!(FetcherErrors::Error404),
+        }
+    }
+
+    async fn random_generic_strip(&self) -> Result<Strip> {
+        match self.random_content().as_ref() {
+            Some(content) => Self::parse_generic_content(content).await,
+            None => bail!(FetcherErrors::Error404),
+        }
+    }
+
+    async fn random_xkcd(&self) -> Result<Strip> {
+        match self.random_content().as_ref() {
+            Some(content) => self.parse_xkcd_content(content).await,
+            None => bail!(FetcherErrors::Error404),
+        }
+    }
+
+    async fn random_oglaf(&self) -> Result<Strip> {
+        match self.random_content().as_ref() {
+            Some(content) => self.parse_oglaf_content(content).await,
+            None => bail!(FetcherErrors::Error404),
+        }
+    }
+
+    async fn random_dinosaur_comics(&self) -> Result<Strip> {
+        match self.random_content().as_ref() {
             Some(content) => self.parse_dinosaur_comics_content(content).await,
             None => bail!(FetcherErrors::Error404),
         }
