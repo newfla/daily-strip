@@ -2,7 +2,7 @@ use cached::proc_macro::cached;
 use cached::SizedCache;
 use daily_strip::{build_fetcher, Sites, Strip, Url};
 use eframe::egui::{
-    ahash::HashMap, CentralPanel, ComboBox, Layout, TopBottomPanel, ViewportBuilder,
+    ahash::HashMap, CentralPanel, ComboBox, Layout, RadioButton, TopBottomPanel, ViewportBuilder,
 };
 use std::{collections::hash_map::Entry::Vacant, hash::Hash, sync::Arc};
 
@@ -49,7 +49,6 @@ fn main() -> Result<(), eframe::Error> {
         rt: Builder::new_multi_thread().enable_all().build().unwrap(),
     };
 
-    let _ = tx_req.blocking_send(Request::default());
     app.start_background_task(rx_req, tx_res);
 
     eframe::run_native(
@@ -73,18 +72,50 @@ impl App {
     fn start_background_task(&self, rx: Receiver<Request>, tx: Sender<Option<Strip>>) {
         self.rt.spawn(async move { background_task(rx, tx).await });
     }
+
+    fn get_content(&mut self) -> Option<Strip> {
+        get_content_cached(
+            Request {
+                site: self.source,
+                ty: self.mode,
+            },
+            &self.tx,
+            &mut self.rx,
+        )
+    }
+}
+
+#[cached(
+    ty = "SizedCache<Request, Option<Strip>>",
+    create = "{ SizedCache::with_size(10) }",
+    convert = r#"{req}"#,
+    sync_writes = true
+)]
+
+fn get_content_cached(
+    req: Request,
+    tx: &Sender<Request>,
+    rx: &mut Receiver<Option<Strip>>,
+) -> Option<Strip> {
+    let _ = tx.blocking_send(req);
+    rx.blocking_recv().flatten()
+}
+
+fn force_refresh() {
+    let mut lock = GET_CONTENT_CACHED.lock().unwrap();
+    *lock = SizedCache::with_size(10);
 }
 
 async fn background_task(mut rx: Receiver<Request>, tx: Sender<Option<Strip>>) {
     let mut fetchers: HashMap<Sites, Option<Fetcher>> = HashMap::default();
 
     while let Some(req) = rx.recv().await {
-        let content = get_content(req, &mut fetchers).await;
+        let content = get_content_background(req, &mut fetchers).await;
         let _ = tx.send(content).await;
     }
 }
 
-async fn get_content(
+async fn get_content_background(
     req: Request,
     fetchers: &mut HashMap<Sites, Option<Fetcher>>,
 ) -> Option<Strip> {
@@ -95,28 +126,18 @@ async fn get_content(
                 .map(|f| Arc::new(f) as Fetcher),
         );
     }
-    if let Some(f) = fetchers.get(&req.site).unwrap().as_ref() {
-        return cached_content(req, f).await;
+    if let Some(fetcher) = fetchers.get(&req.site).unwrap().as_ref() {
+        return match req.ty {
+            RequestType::Last => fetcher.last().await.ok(),
+            RequestType::Random => fetcher.random().await.ok(),
+        };
     }
     None
 }
 
-#[cached(
-    ty = "SizedCache<Request, Option<Strip>>",
-    create = "{ SizedCache::with_size(100) }",
-    convert = r#"{req}"#,
-    sync_writes = true
-)]
-async fn cached_content(req: Request, fetcher: &Fetcher) -> Option<Strip> {
-    match req.ty {
-        RequestType::Last => fetcher.last().await.ok(),
-        RequestType::Random => fetcher.random().await.ok(),
-    }
-}
-
 impl eframe::App for App {
     fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
-        let strip = self.rx.blocking_recv().flatten();
+        let strip = self.get_content();
         TopBottomPanel::bottom("my_panel").show(ctx, |ui| {
             ui.horizontal(|ui| {
                 ComboBox::from_label("")
@@ -133,11 +154,20 @@ impl eframe::App for App {
                     RequestType::Last,
                     format!("{:?}", RequestType::Last),
                 );
-                ui.radio_value(
-                    &mut self.mode,
-                    RequestType::Random,
-                    format!("{:?}", RequestType::Random),
-                );
+
+                if ui
+                    .add(RadioButton::new(
+                        self.mode == RequestType::Random,
+                        format!("{:?}", RequestType::Random),
+                    ))
+                    .clicked()
+                {
+                    self.mode = RequestType::Random;
+                    force_refresh()
+                }
+                if ui.button("REFRESH").clicked() {
+                    force_refresh()
+                }
                 if let Some(content) = strip.as_ref() {
                     ui.with_layout(Layout::right_to_left(eframe::egui::Align::Center), |ui| {
                         ui.label("Showing: ".to_owned() + &content.title)
@@ -147,11 +177,6 @@ impl eframe::App for App {
         });
 
         CentralPanel::default().show(ctx, |ui| {
-            let _ = self.tx.blocking_send(Request {
-                site: self.source,
-                ty: self.mode,
-            });
-
             if let Some(content) = strip.as_ref() {
                 println!("{content:?}");
                 ui.image(&content.url);
