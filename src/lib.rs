@@ -113,7 +113,7 @@ mod test {
     }
 
     #[tokio::test]
-    async fn test_monkey_user() {
+    async fn test_monkeyuser() {
         let fetcher = build_fetcher(crate::Sites::MonkeyUser).await;
         assert!(fetcher.is_some());
         let fetcher = fetcher.unwrap();

@@ -2,8 +2,7 @@ use cached::proc_macro::cached;
 use cached::SizedCache;
 use daily_strip::{build_fetcher, Sites, Strip, Url};
 use eframe::egui::{
-    ahash::HashMap, CentralPanel, ComboBox,
-    ViewportBuilder,
+    ahash::HashMap, CentralPanel, ComboBox, TopBottomPanel, ViewportBuilder,
 };
 use std::{collections::hash_map::Entry::Vacant, hash::Hash, sync::Arc};
 
@@ -15,23 +14,21 @@ use tokio::{
 
 type Fetcher = Arc<dyn daily_strip::Fetcher + Send + Sync + 'static>;
 
-#[derive(Clone, Copy, Hash, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
 enum RequestType {
     Last,
-    Random
+    Random,
 }
 
 #[derive(Clone, Copy, Hash, PartialEq, Eq)]
 struct Request {
     site: Sites,
-    ty: RequestType
+    ty: RequestType,
 }
 
 fn main() -> Result<(), eframe::Error> {
     let opts = eframe::NativeOptions {
-        viewport: ViewportBuilder::default()
-            .with_inner_size([320.0, 240.0])
-            .with_resizable(true),
+        viewport: ViewportBuilder::default().with_inner_size([800.0, 800.0]),
         ..Default::default()
     };
 
@@ -72,8 +69,7 @@ impl App {
 }
 
 async fn background_task(mut rx: Receiver<Request>, tx: Sender<Option<Strip>>) {
-    let mut fetchers: HashMap<Sites, Option<Fetcher>> =
-        HashMap::default();
+    let mut fetchers: HashMap<Sites, Option<Fetcher>> = HashMap::default();
 
     while let Some(req) = rx.recv().await {
         let content = get_content(req, &mut fetchers).await;
@@ -101,21 +97,19 @@ async fn get_content(
 #[cached(
     ty = "SizedCache<Request, Option<Strip>>",
     create = "{ SizedCache::with_size(100) }",
-    convert = r#"{req}"#
+    convert = r#"{req}"#,
+    sync_writes = true
 )]
 async fn cached_content(req: Request, fetcher: &Fetcher) -> Option<Strip> {
-    fetcher.last().await.ok()
+    match req.ty {
+        RequestType::Last => fetcher.last().await.ok(),
+        RequestType::Random => fetcher.random().await.ok(),
+    }
 }
 
 impl eframe::App for App {
     fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
-        CentralPanel::default().show(ctx, |ui| {
-            let _ = self.tx.blocking_send(Request { site: self.selected, ty: self.mode });
-            let content = self.rx.blocking_recv().flatten();
-            println!("{content:?}");
-            if let Some(val) = content {
-               ui.image(val.url);
-            }
+        TopBottomPanel::bottom("my_panel").show(ctx, |ui| {
             ui.horizontal(|ui| {
                 ComboBox::from_label("")
                     .selected_text(format!("{:?}", self.selected))
@@ -126,7 +120,30 @@ impl eframe::App for App {
                     });
                 let homepage = self.selected.homepage();
                 ui.hyperlink_to(&homepage, "https://www.".to_owned() + &homepage);
+                ui.radio_value(
+                    &mut self.mode,
+                    RequestType::Last,
+                    format!("{:?}", RequestType::Last),
+                );
+                ui.radio_value(
+                    &mut self.mode,
+                    RequestType::Random,
+                    format!("{:?}", RequestType::Random),
+                );
             });
+        });
+
+        CentralPanel::default().show(ctx, |ui| {
+            let _ = self.tx.blocking_send(Request {
+                site: self.selected,
+                ty: self.mode,
+            });
+            if let Some(content) = self.rx.blocking_recv() {
+                println!("{content:?}");
+                if let Some(val) = content {
+                    ui.image(val.url);
+                }
+            }
         });
     }
 }
