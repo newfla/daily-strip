@@ -2,7 +2,7 @@ use cached::proc_macro::cached;
 use cached::SizedCache;
 use daily_strip::{build_fetcher, Sites, Strip, Url};
 use eframe::egui::{
-    ahash::HashMap, CentralPanel, ComboBox, TopBottomPanel, ViewportBuilder,
+    ahash::HashMap, CentralPanel, ComboBox, Layout, TopBottomPanel, ViewportBuilder,
 };
 use std::{collections::hash_map::Entry::Vacant, hash::Hash, sync::Arc};
 
@@ -20,7 +20,13 @@ enum RequestType {
     Random,
 }
 
-#[derive(Clone, Copy, Hash, PartialEq, Eq)]
+impl Default for RequestType {
+    fn default() -> Self {
+        Self::Random
+    }
+}
+
+#[derive(Clone, Copy, Default, Hash, PartialEq, Eq)]
 struct Request {
     site: Sites,
     ty: RequestType,
@@ -37,12 +43,13 @@ fn main() -> Result<(), eframe::Error> {
 
     let app = App {
         mode: RequestType::Last,
-        selected: Sites::default(),
-        tx: tx_req,
+        source: Sites::default(),
+        tx: tx_req.clone(),
         rx: rx_res,
         rt: Builder::new_multi_thread().enable_all().build().unwrap(),
     };
 
+    let _ = tx_req.blocking_send(Request::default());
     app.start_background_task(rx_req, tx_res);
 
     eframe::run_native(
@@ -56,7 +63,7 @@ fn main() -> Result<(), eframe::Error> {
 }
 struct App {
     mode: RequestType,
-    selected: Sites,
+    source: Sites,
     tx: Sender<Request>,
     rx: Receiver<Option<Strip>>,
     rt: Runtime,
@@ -109,16 +116,17 @@ async fn cached_content(req: Request, fetcher: &Fetcher) -> Option<Strip> {
 
 impl eframe::App for App {
     fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
+        let strip = self.rx.blocking_recv().flatten();
         TopBottomPanel::bottom("my_panel").show(ctx, |ui| {
             ui.horizontal(|ui| {
                 ComboBox::from_label("")
-                    .selected_text(format!("{:?}", self.selected))
+                    .selected_text(format!("{:?}", self.source))
                     .show_ui(ui, |ui| {
                         for site in Sites::iter() {
-                            ui.selectable_value(&mut self.selected, site, format!("{}", site));
+                            ui.selectable_value(&mut self.source, site, format!("{}", site));
                         }
                     });
-                let homepage = self.selected.homepage();
+                let homepage = self.source.homepage();
                 ui.hyperlink_to(&homepage, "https://www.".to_owned() + &homepage);
                 ui.radio_value(
                     &mut self.mode,
@@ -130,19 +138,23 @@ impl eframe::App for App {
                     RequestType::Random,
                     format!("{:?}", RequestType::Random),
                 );
+                if let Some(content) = strip.as_ref() {
+                    ui.with_layout(Layout::right_to_left(eframe::egui::Align::Center), |ui| {
+                        ui.label("Showing: ".to_owned() + &content.title)
+                    });
+                }
             });
         });
 
         CentralPanel::default().show(ctx, |ui| {
             let _ = self.tx.blocking_send(Request {
-                site: self.selected,
+                site: self.source,
                 ty: self.mode,
             });
-            if let Some(content) = self.rx.blocking_recv() {
+
+            if let Some(content) = strip.as_ref() {
                 println!("{content:?}");
-                if let Some(val) = content {
-                    ui.image(val.url);
-                }
+                ui.image(&content.url);
             }
         });
     }

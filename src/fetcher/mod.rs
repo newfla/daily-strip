@@ -346,7 +346,7 @@ impl FetcherImpl {
 
         Ok(Strip {
             title: content.title.to_string(),
-            url: "https://".to_string() + &self.site.homepage() +&url,
+            url: "https://".to_string() + &self.site.homepage() + &url,
         })
     }
 
