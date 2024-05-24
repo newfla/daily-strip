@@ -2,7 +2,8 @@ use cached::proc_macro::cached;
 use cached::SizedCache;
 use daily_strip::{build_fetcher, Sites, Strip, Url};
 use eframe::egui::{
-    ahash::HashMap, CentralPanel, ComboBox, Layout, RadioButton, TopBottomPanel, ViewportBuilder,
+    ahash::HashMap, CentralPanel, ComboBox, Label, Layout, RadioButton, TopBottomPanel,
+    ViewportBuilder,
 };
 use std::{collections::hash_map::Entry::Vacant, hash::Hash, sync::Arc};
 
@@ -170,7 +171,7 @@ impl eframe::App for App {
                 }
                 if let Some(content) = strip.as_ref() {
                     ui.with_layout(Layout::right_to_left(eframe::egui::Align::Center), |ui| {
-                        ui.label("Showing: ".to_owned() + &content.title)
+                        ui.add(Label::new("Showing: ".to_owned() + &content.title).truncate(true))
                     });
                 }
             });
@@ -178,7 +179,6 @@ impl eframe::App for App {
 
         CentralPanel::default().show(ctx, |ui| {
             if let Some(content) = strip.as_ref() {
-                println!("{content:?}");
                 ui.image(&content.url);
             }
         });
