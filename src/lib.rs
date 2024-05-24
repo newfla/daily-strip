@@ -73,7 +73,7 @@ impl Url for Sites {
     fn homepage(&self) -> String {
         match self {
             Sites::TurnoffUs => "turnoff.us",
-            Sites::MonkeyUser => "www.monkeyuser.com",
+            Sites::MonkeyUser => "monkeyuser.com",
             Sites::BonkersWorld => "bonkersworld.net",
             Sites::Goomics => "goomics.net",
             Sites::Xkcd => "xkcd.com",
