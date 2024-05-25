@@ -178,9 +178,11 @@ impl eframe::App for App {
         });
 
         CentralPanel::default().show(ctx, |ui| {
-            if let Some(content) = strip.as_ref() {
-                ui.image(&content.url);
-            }
+            ui.with_layout(Layout::centered_and_justified(eframe::egui::Direction::LeftToRight), |ui| {
+                if let Some(content) = strip.as_ref() {
+                    ui.image(&content.url);
+                }
+            })
         });
     }
 }
