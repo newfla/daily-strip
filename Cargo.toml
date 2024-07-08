@@ -17,7 +17,7 @@ categories = ["multimedia::images"]
 anyhow = "1.0.75"
 async-trait = "0.1.74"
 cached = {version = "0.52.0", features = ["default", "async"]}
-eframe = "0.27.2"
+eframe = "0.28.1"
 egui_extras = {version = "0.27.2", features = ["default", "all_loaders"] }
 image = { version = "0.24", features = ["jpeg", "png"] } 
 rand = "0.8.5"
