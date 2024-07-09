@@ -57,7 +57,7 @@ fn main() -> Result<(), eframe::Error> {
         opts,
         Box::new(|cc| {
             egui_extras::install_image_loaders(&cc.egui_ctx);
-            Box::new(app)
+            Ok(Box::new(app))
         }),
     )
 }
@@ -171,7 +171,7 @@ impl eframe::App for App {
                 }
                 if let Some(content) = strip.as_ref() {
                     ui.with_layout(Layout::right_to_left(eframe::egui::Align::Center), |ui| {
-                        ui.add(Label::new("Showing: ".to_owned() + &content.title).truncate(true))
+                        ui.add(Label::new(&content.title).truncate())
                     });
                 }
             });
