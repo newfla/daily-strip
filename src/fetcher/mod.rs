@@ -434,7 +434,7 @@ impl FetcherImpl {
 
         Ok(Strip {
             title: content.title.to_string(),
-            url
+            url,
         })
     }
 
