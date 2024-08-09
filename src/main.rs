@@ -149,7 +149,7 @@ impl eframe::App for App {
                         }
                     });
                 let homepage = self.source.homepage();
-                ui.hyperlink_to(&homepage, "https://".to_owned() + &homepage);
+                ui.hyperlink_to(homepage, "https://".to_owned() + homepage);
                 ui.radio_value(
                     &mut self.mode,
                     RequestType::Last,

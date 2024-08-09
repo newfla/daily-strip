@@ -19,6 +19,7 @@ pub enum Sites {
     Xkcd,
     DinosaurComics,
     Oglaf,
+    Cad,
 }
 
 impl Default for Sites {
@@ -47,12 +48,12 @@ pub enum FetcherErrors {
 }
 
 pub trait Url {
-    fn fetch_url(&self) -> String;
-    fn homepage(&self) -> String;
+    fn fetch_url(&self) -> &str;
+    fn homepage(&self) -> &str;
 }
 
 impl Url for Sites {
-    fn fetch_url(&self) -> String {
+    fn fetch_url(&self) -> &str {
         match self {
             // Incomplete RSS feed. Switching to scraping
             Sites::TurnoffUs => "https://turnoff.us",
@@ -66,11 +67,12 @@ impl Url for Sites {
             // Incomplete RSS feed. Switching to scraping
             Sites::DinosaurComics => "https://www.qwantz.com",
             Sites::Oglaf => "https://www.oglaf.com/feeds/rss",
+            // Incomplete RSS feed.
+            Self::Cad => "https://cad-comic.com/feed",
         }
-        .to_string()
     }
 
-    fn homepage(&self) -> String {
+    fn homepage(&self) -> &str {
         match self {
             Sites::TurnoffUs => "turnoff.us",
             Sites::MonkeyUser => "monkeyuser.com",
@@ -79,8 +81,8 @@ impl Url for Sites {
             Sites::Xkcd => "xkcd.com",
             Sites::DinosaurComics => "qwantz.com",
             Sites::Oglaf => "oglaf.com",
+            Sites::Cad => "cad-comic.com",
         }
-        .to_string()
     }
 }
 
@@ -94,6 +96,7 @@ impl Display for Sites {
             Sites::Xkcd => "xkcd",
             Sites::DinosaurComics => "Dinosaur Comics",
             Sites::Oglaf => "Oglaf.com",
+            Sites::Cad => "CTRL+ALT+DEL",
         };
         write!(f, "{}", name)
     }
@@ -160,6 +163,15 @@ mod test {
     #[tokio::test]
     async fn test_dinosaur_comics() {
         let fetcher = build_fetcher(crate::Sites::DinosaurComics).await;
+        assert!(fetcher.is_some());
+        let fetcher = fetcher.unwrap();
+        assert!(fetcher.last().await.is_ok());
+        assert!(fetcher.random().await.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_cmd() {
+        let fetcher = build_fetcher(crate::Sites::Cad).await;
         assert!(fetcher.is_some());
         let fetcher = fetcher.unwrap();
         assert!(fetcher.last().await.is_ok());

@@ -22,6 +22,7 @@ impl Fetcher for FetcherImpl {
             Sites::Xkcd => self.reload_xkcd().await,
             Sites::Oglaf => self.reload_oglaf().await,
             Sites::DinosaurComics => self.reload_dinosaur_comics().await,
+            Sites::Cad => self.reload_cmd().await,
         }
     }
 
@@ -34,6 +35,7 @@ impl Fetcher for FetcherImpl {
             Sites::Xkcd => self.last_xkcd().await,
             Sites::Oglaf => self.last_oglaf().await,
             Sites::DinosaurComics => self.last_dinosaur_comics().await,
+            Sites::Cad => self.last_cmd().await,
         }
     }
 
@@ -46,6 +48,7 @@ impl Fetcher for FetcherImpl {
             Sites::Xkcd => self.random_xkcd().await,
             Sites::Oglaf => self.random_oglaf().await,
             Sites::DinosaurComics => self.random_dinosaur_comics().await,
+            Sites::Cad => self.random_cmd().await,
         }
     }
 }
@@ -73,7 +76,7 @@ impl FetcherImpl {
     }
 
     async fn reload_turnoff_us(&mut self) -> Result<()> {
-        let data = reqwest::get(self.site.fetch_url() + "/all")
+        let data = reqwest::get(self.site.fetch_url().to_owned() + "/all")
             .await?
             .text()
             .await?;
@@ -90,7 +93,7 @@ impl FetcherImpl {
             .filter(|(title, url)| !title.is_empty() && url.is_some())
             .map(|(title, url)| Strip {
                 title,
-                url: self.site.fetch_url() + url.unwrap(),
+                url: self.site.fetch_url().to_owned() + url.unwrap(),
             })
             .collect();
 
@@ -161,7 +164,7 @@ impl FetcherImpl {
     }
 
     async fn reload_dinosaur_comics(&mut self) -> Result<()> {
-        let data = reqwest::get(self.site.fetch_url() + "/archive.php")
+        let data = reqwest::get(self.site.fetch_url().to_owned() + "/archive.php")
             .await?
             .text()
             .await?;
@@ -210,7 +213,7 @@ impl FetcherImpl {
             .filter(|(title, thumb_url)| !title.is_empty() && thumb_url.is_some())
             .map(|(name, thumb_url)| Strip {
                 title: name.trim().to_string(),
-                url: self.site.fetch_url()
+                url: self.site.fetch_url().to_owned()
                     + &thumb_url
                         .unwrap()
                         .to_string()
@@ -237,11 +240,37 @@ impl FetcherImpl {
         for i in (1..(1 + last.parse::<usize>()?)).rev() {
             data.push(Strip {
                 title: i.to_string(),
-                url: self.site.fetch_url() + "/" + &i.to_string(),
+                url: self.site.fetch_url().to_owned() + "/" + &i.to_string(),
             })
         }
         self.posts = Some(data);
         Ok(())
+    }
+
+    async fn reload_cmd(&mut self) -> Result<()> {
+        let data = reqwest::get(self.site.fetch_url()).await?.bytes().await?;
+        let data: Vec<_> = Channel::read_from(&data[..])?
+            .items
+            .into_iter()
+            .map(|item| (item.title, item.link))
+            .filter(|(title, link)| {
+                title.as_ref().is_some_and(|title| !title.is_empty())
+                    && link
+                        .as_ref()
+                        .is_some_and(|description| !description.is_empty())
+            })
+            .map(|(title, url)| Strip {
+                title: title.unwrap(),
+                url: url.unwrap(),
+            })
+            .collect();
+        match data.len() {
+            0 => bail!(FetcherErrors::Error404),
+            _ => {
+                self.posts = Some(data);
+                Ok(())
+            }
+        }
     }
 
     async fn last_turnoff_us(&self) -> Result<Strip> {
@@ -282,6 +311,13 @@ impl FetcherImpl {
     async fn last_dinosaur_comics(&self) -> Result<Strip> {
         match self.last_content().as_ref() {
             Some(content) => self.parse_dinosaur_comics_content(content).await,
+            None => bail!(FetcherErrors::Error404),
+        }
+    }
+
+    async fn last_cmd(&self) -> Result<Strip> {
+        match self.last_content().as_ref() {
+            Some(content) => self.parse_cmd_content(content).await,
             None => bail!(FetcherErrors::Error404),
         }
     }
@@ -328,6 +364,13 @@ impl FetcherImpl {
         }
     }
 
+    async fn random_cmd(&self) -> Result<Strip> {
+        match self.random_content().as_ref() {
+            Some(content) => self.parse_cmd_content(content).await,
+            None => bail!(FetcherErrors::Error404),
+        }
+    }
+
     async fn parse_turnoff_us_content(&self, content: &Strip) -> Result<Strip> {
         let data = reqwest::get(&content.url).await?.text().await?;
         let url = Self::parse_first_occurency_blocking(data, "p img", "src")
@@ -335,7 +378,7 @@ impl FetcherImpl {
 
         Ok(Strip {
             title: content.title.to_string(),
-            url: self.site.fetch_url() + &url,
+            url: self.site.fetch_url().to_owned() + &url,
         })
     }
 
@@ -346,7 +389,7 @@ impl FetcherImpl {
 
         Ok(Strip {
             title: content.title.to_string(),
-            url: "https://".to_string() + &self.site.homepage() + &url,
+            url: "https://".to_string() + self.site.homepage() + &url,
         })
     }
 
@@ -380,7 +423,18 @@ impl FetcherImpl {
 
         Ok(Strip {
             title: content.title.to_string(),
-            url: self.site.fetch_url() + "/" + &url,
+            url: self.site.fetch_url().to_owned() + "/" + &url,
+        })
+    }
+
+    async fn parse_cmd_content(&self, content: &Strip) -> Result<Strip> {
+        let data = reqwest::get(&content.url).await?.text().await?;
+        let url = Self::parse_first_occurency_blocking(data, "div.arrowright + a img", "src")
+            .ok_or(FetcherErrors::Error404)?;
+
+        Ok(Strip {
+            title: content.title.to_string(),
+            url
         })
     }
 
@@ -404,7 +458,7 @@ impl FetcherImpl {
             .map(|elem| {
                 elem.attr("content")
                     .unwrap()
-                    .replace(&self.site.fetch_url(), "")
+                    .replace(self.site.fetch_url(), "")
             })
             .last()
     }
