@@ -12,3 +12,4 @@ Comic strips viewer
 - [xkcd](https://xkcd.com)
 - [dinosaur comics](https://www.qwantz.com)
 - [oglaf](https://www.oglaf.com) [NSFW]
+- [CTRL+ALT+DEL](https://cad-comic.com/)
