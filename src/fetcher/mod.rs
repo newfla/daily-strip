@@ -23,6 +23,7 @@ impl Fetcher for FetcherImpl {
             Sites::Oglaf => self.reload_oglaf().await,
             Sites::DinosaurComics => self.reload_dinosaur_comics().await,
             Sites::Cad => self.reload_cmd().await,
+            Sites::JoyOfTech => self.reload_joy_of_tech().await,
         }
     }
 
@@ -36,6 +37,7 @@ impl Fetcher for FetcherImpl {
             Sites::Oglaf => self.last_oglaf().await,
             Sites::DinosaurComics => self.last_dinosaur_comics().await,
             Sites::Cad => self.last_cmd().await,
+            Sites::JoyOfTech => self.last_joy_of_tech().await,
         }
     }
 
@@ -49,6 +51,7 @@ impl Fetcher for FetcherImpl {
             Sites::Oglaf => self.random_oglaf().await,
             Sites::DinosaurComics => self.random_dinosaur_comics().await,
             Sites::Cad => self.random_cmd().await,
+            Sites::JoyOfTech => self.random_joy_of_tech().await,
         }
     }
 }
@@ -145,7 +148,7 @@ impl FetcherImpl {
             .map(|(name, description)| {
                 (
                     name.unwrap(),
-                    Self::parse_first_occurency_blocking(description.unwrap(), "p a", "href"),
+                    Self::parse_first_occurency_blocking(&description.unwrap(), "p a", "href"),
                 )
             })
             .filter(|(_, url)| url.is_some())
@@ -247,6 +250,29 @@ impl FetcherImpl {
         Ok(())
     }
 
+    async fn reload_joy_of_tech(&mut self) -> Result<()> {
+        let data = reqwest::get(self.site.fetch_url()).await?.text().await?;
+        let frag = Html::parse_document(&data);
+        let selector = Selector::parse("h3 a").unwrap();
+        let data: Vec<_> = frag
+            .select(&selector)
+            .map(|elem| {
+                let url = elem.value().attr("href").unwrap().to_owned();
+                Strip {
+                    title: format!("https://{}", self.site.homepage()),
+                    url,
+                }
+            })
+            .collect();
+        match data.len() {
+            0 => bail!(FetcherErrors::Error404),
+            _ => {
+                self.posts = Some(data);
+                Ok(())
+            }
+        }
+    }
+
     async fn reload_cmd(&mut self) -> Result<()> {
         let data = reqwest::get(self.site.fetch_url()).await?.bytes().await?;
         let data: Vec<_> = Channel::read_from(&data[..])?
@@ -322,6 +348,13 @@ impl FetcherImpl {
         }
     }
 
+    async fn last_joy_of_tech(&self) -> Result<Strip> {
+        match self.last_content().as_ref() {
+            Some(content) => self.parse_joy_of_tech_content(content).await,
+            None => bail!(FetcherErrors::Error404),
+        }
+    }
+
     async fn random_turnoff_us(&self) -> Result<Strip> {
         match self.random_content().as_ref() {
             Some(content) => self.parse_turnoff_us_content(content).await,
@@ -370,10 +403,16 @@ impl FetcherImpl {
             None => bail!(FetcherErrors::Error404),
         }
     }
+    async fn random_joy_of_tech(&self) -> Result<Strip> {
+        match self.random_content().as_ref() {
+            Some(content) => self.parse_joy_of_tech_content(content).await,
+            None => bail!(FetcherErrors::Error404),
+        }
+    }
 
     async fn parse_turnoff_us_content(&self, content: &Strip) -> Result<Strip> {
         let data = reqwest::get(&content.url).await?.text().await?;
-        let url = Self::parse_first_occurency_blocking(data, "p img", "src")
+        let url = Self::parse_first_occurency_blocking(&data, "p img", "src")
             .ok_or(FetcherErrors::Error404)?;
 
         Ok(Strip {
@@ -384,7 +423,7 @@ impl FetcherImpl {
 
     async fn parse_monkeyuser_content(&self, content: &Strip) -> Result<Strip> {
         let data = reqwest::get(&content.url).await?.text().await?;
-        let url = Self::parse_first_occurency_blocking(data, "p img", "src")
+        let url = Self::parse_first_occurency_blocking(&data, "p img", "src")
             .ok_or(FetcherErrors::Error404)?;
 
         Ok(Strip {
@@ -407,7 +446,7 @@ impl FetcherImpl {
 
     async fn parse_oglaf_content(&self, content: &Strip) -> Result<Strip> {
         let data = reqwest::get(&content.url).await?.text().await?;
-        let url = Self::parse_first_occurency_blocking(data, "#strip", "src")
+        let url = Self::parse_first_occurency_blocking(&data, "#strip", "src")
             .ok_or(FetcherErrors::Error404)?;
 
         Ok(Strip {
@@ -418,7 +457,7 @@ impl FetcherImpl {
 
     async fn parse_dinosaur_comics_content(&self, content: &Strip) -> Result<Strip> {
         let data = reqwest::get(&content.url).await?.text().await?;
-        let url = Self::parse_first_occurency_blocking(data, "img.comic", "src")
+        let url = Self::parse_first_occurency_blocking(&data, "img.comic", "src")
             .ok_or(FetcherErrors::Error404)?;
 
         Ok(Strip {
@@ -429,7 +468,7 @@ impl FetcherImpl {
 
     async fn parse_cmd_content(&self, content: &Strip) -> Result<Strip> {
         let data = reqwest::get(&content.url).await?.text().await?;
-        let url = Self::parse_first_occurency_blocking(data, "div.arrowright + a img", "src")
+        let url = Self::parse_first_occurency_blocking(&data, "div.arrowright + a img", "src")
             .ok_or(FetcherErrors::Error404)?;
 
         Ok(Strip {
@@ -438,8 +477,19 @@ impl FetcherImpl {
         })
     }
 
-    fn parse_first_occurency_blocking(data: String, selector: &str, attr: &str) -> Option<String> {
-        let frag = Html::parse_document(&data);
+    async fn parse_joy_of_tech_content(&self, content: &Strip) -> Result<Strip> {
+        let data = reqwest::get(&content.url).await?.text().await?;
+        let url = Self::parse_first_occurency_blocking(&data, "p.Maintext img", "src")
+            .ok_or(FetcherErrors::Error404)?
+            .replace("..", &content.title);
+
+        let title = Self::parse_first_occurency_blocking(&data, "p.Maintext img", "alt")
+            .ok_or(FetcherErrors::Error404)?;
+        Ok(Strip { title, url })
+    }
+
+    fn parse_first_occurency_blocking(data: &str, selector: &str, attr: &str) -> Option<String> {
+        let frag = Html::parse_document(data);
         let selector = Selector::parse(selector).unwrap();
         Some(
             frag.select(&selector)
