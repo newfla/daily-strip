@@ -20,6 +20,7 @@ pub enum Sites {
     DinosaurComics,
     Oglaf,
     Cad,
+    JoyOfTech,
 }
 
 impl Default for Sites {
@@ -68,7 +69,8 @@ impl Url for Sites {
             Sites::DinosaurComics => "https://www.qwantz.com",
             Sites::Oglaf => "https://www.oglaf.com/feeds/rss",
             // Incomplete RSS feed.
-            Self::Cad => "https://cad-comic.com/feed",
+            Sites::Cad => "https://cad-comic.com/feed",
+            Sites::JoyOfTech => "https://www.joyoftech.com/joyoftech/jotblog",
         }
     }
 
@@ -82,6 +84,7 @@ impl Url for Sites {
             Sites::DinosaurComics => "qwantz.com",
             Sites::Oglaf => "oglaf.com",
             Sites::Cad => "cad-comic.com",
+            Sites::JoyOfTech => "joyoftech.com/joyoftech",
         }
     }
 }
@@ -97,6 +100,7 @@ impl Display for Sites {
             Sites::DinosaurComics => "Dinosaur Comics",
             Sites::Oglaf => "Oglaf.com",
             Sites::Cad => "CTRL+ALT+DEL",
+            Sites::JoyOfTech => "The Joy of Tech",
         };
         write!(f, "{}", name)
     }
@@ -172,6 +176,16 @@ mod test {
     #[tokio::test]
     async fn test_cmd() {
         let fetcher = build_fetcher(crate::Sites::Cad).await;
+        assert!(fetcher.is_some());
+        let fetcher = fetcher.unwrap();
+        assert!(fetcher.last().await.is_ok());
+        assert!(fetcher.random().await.is_ok());
+    }
+
+    #[ignore]
+    #[tokio::test]
+    async fn test_joy_of_tech() {
+        let fetcher = build_fetcher(crate::Sites::JoyOfTech).await;
         assert!(fetcher.is_some());
         let fetcher = fetcher.unwrap();
         assert!(fetcher.last().await.is_ok());

@@ -13,3 +13,4 @@ Comic strips viewer
 - [dinosaur comics](https://www.qwantz.com)
 - [oglaf](https://www.oglaf.com) [NSFW]
 - [CTRL+ALT+DEL](https://cad-comic.com/)
+- [The Joy of Tech](https://www.joyoftech.com/joyoftech/jotblog/) 
