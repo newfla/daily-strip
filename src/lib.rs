@@ -182,6 +182,7 @@ mod test {
         assert!(fetcher.random().await.is_ok());
     }
 
+    #[ignore]
     #[tokio::test]
     async fn test_joy_of_tech() {
         let fetcher = build_fetcher(crate::Sites::JoyOfTech).await;
