@@ -22,8 +22,9 @@ impl Fetcher for FetcherImpl {
             Sites::Xkcd => self.reload_xkcd().await,
             Sites::Oglaf => self.reload_oglaf().await,
             Sites::DinosaurComics => self.reload_dinosaur_comics().await,
-            Sites::Cad => self.reload_cmd().await,
+            Sites::CadComics => self.reload_cmd().await,
             Sites::JoyOfTech => self.reload_joy_of_tech().await,
+            Sites::GoodTechThings => self.reload_gt2().await,
         }
     }
 
@@ -36,8 +37,9 @@ impl Fetcher for FetcherImpl {
             Sites::Xkcd => self.last_xkcd().await,
             Sites::Oglaf => self.last_oglaf().await,
             Sites::DinosaurComics => self.last_dinosaur_comics().await,
-            Sites::Cad => self.last_cmd().await,
+            Sites::CadComics => self.last_cmd().await,
             Sites::JoyOfTech => self.last_joy_of_tech().await,
+            Sites::GoodTechThings => self.last_gt2().await,
         }
     }
 
@@ -50,8 +52,9 @@ impl Fetcher for FetcherImpl {
             Sites::Xkcd => self.random_xkcd().await,
             Sites::Oglaf => self.random_oglaf().await,
             Sites::DinosaurComics => self.random_dinosaur_comics().await,
-            Sites::Cad => self.random_cmd().await,
+            Sites::CadComics => self.random_cmd().await,
             Sites::JoyOfTech => self.random_joy_of_tech().await,
+            Sites::GoodTechThings => self.random_gt2().await,
         }
     }
 }
@@ -299,6 +302,32 @@ impl FetcherImpl {
         }
     }
 
+    async fn reload_gt2(&mut self) -> Result<()> {
+        let data = reqwest::get(self.site.fetch_url()).await?.bytes().await?;
+        let data: Vec<_> = Channel::read_from(&data[..])?
+            .items
+            .into_iter()
+            .map(|item| (item.title, item.content))
+            .filter(|(title, content)| {
+                title.as_ref().is_some_and(|title| !title.is_empty())
+                    && content
+                        .as_ref()
+                        .is_some_and(|description| !description.is_empty())
+            })
+            .map(|(title, content)| Strip {
+                title: title.unwrap(),
+                url: content.unwrap(),
+            })
+            .collect();
+        match data.len() {
+            0 => bail!(FetcherErrors::Error404),
+            _ => {
+                self.posts = Some(data);
+                Ok(())
+            }
+        }
+    }
+
     async fn last_turnoff_us(&self) -> Result<Strip> {
         match self.last_content().as_ref() {
             Some(content) => self.parse_turnoff_us_content(content).await,
@@ -355,6 +384,13 @@ impl FetcherImpl {
         }
     }
 
+    async fn last_gt2(&self) -> Result<Strip> {
+        match self.last_content().as_ref() {
+            Some(content) => self.parse_gt2_content(content).await,
+            None => bail!(FetcherErrors::Error404),
+        }
+    }
+
     async fn random_turnoff_us(&self) -> Result<Strip> {
         match self.random_content().as_ref() {
             Some(content) => self.parse_turnoff_us_content(content).await,
@@ -403,9 +439,17 @@ impl FetcherImpl {
             None => bail!(FetcherErrors::Error404),
         }
     }
+
     async fn random_joy_of_tech(&self) -> Result<Strip> {
         match self.random_content().as_ref() {
             Some(content) => self.parse_joy_of_tech_content(content).await,
+            None => bail!(FetcherErrors::Error404),
+        }
+    }
+
+    async fn random_gt2(&self) -> Result<Strip> {
+        match self.random_content().as_ref() {
+            Some(content) => self.parse_gt2_content(content).await,
             None => bail!(FetcherErrors::Error404),
         }
     }
@@ -486,6 +530,16 @@ impl FetcherImpl {
         let title = Self::parse_first_occurency_blocking(&data, "p.Maintext img", "alt")
             .ok_or(FetcherErrors::Error404)?;
         Ok(Strip { title, url })
+    }
+
+    async fn parse_gt2_content(&self, content: &Strip) -> Result<Strip> {
+        let url = Self::parse_first_occurency_blocking(&content.url, "img", "src")
+            .ok_or(FetcherErrors::Error404)?
+            .replace("..", &content.title);
+        Ok(Strip {
+            title: content.title.clone(),
+            url,
+        })
     }
 
     fn parse_first_occurency_blocking(data: &str, selector: &str, attr: &str) -> Option<String> {

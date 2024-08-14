@@ -19,8 +19,9 @@ pub enum Sites {
     Xkcd,
     DinosaurComics,
     Oglaf,
-    Cad,
+    CadComics,
     JoyOfTech,
+    GoodTechThings,
 }
 
 impl Default for Sites {
@@ -69,8 +70,10 @@ impl Url for Sites {
             Sites::DinosaurComics => "https://www.qwantz.com",
             Sites::Oglaf => "https://www.oglaf.com/feeds/rss",
             // Incomplete RSS feed.
-            Sites::Cad => "https://cad-comic.com/feed",
+            Sites::CadComics => "https://cad-comic.com/feed",
             Sites::JoyOfTech => "https://www.joyoftech.com/joyoftech/jotblog",
+            // Incomplete RSS feed.
+            Sites::GoodTechThings => "https://www.goodtechthings.com/rss/",
         }
     }
 
@@ -83,8 +86,9 @@ impl Url for Sites {
             Sites::Xkcd => "xkcd.com",
             Sites::DinosaurComics => "qwantz.com",
             Sites::Oglaf => "oglaf.com",
-            Sites::Cad => "cad-comic.com",
+            Sites::CadComics => "cad-comic.com",
             Sites::JoyOfTech => "joyoftech.com/joyoftech",
+            Sites::GoodTechThings => "goodtechthings.com",
         }
     }
 }
@@ -98,9 +102,10 @@ impl Display for Sites {
             Sites::Goomics => "Goomics",
             Sites::Xkcd => "xkcd",
             Sites::DinosaurComics => "Dinosaur Comics",
-            Sites::Oglaf => "Oglaf.com",
-            Sites::Cad => "CTRL+ALT+DEL",
+            Sites::Oglaf => "Oglaf",
+            Sites::CadComics => "CTRL+ALT+DEL",
             Sites::JoyOfTech => "The Joy of Tech",
+            Sites::GoodTechThings => "Good Tech Things",
         };
         write!(f, "{}", name)
     }
@@ -175,7 +180,7 @@ mod test {
 
     #[tokio::test]
     async fn test_cmd() {
-        let fetcher = build_fetcher(crate::Sites::Cad).await;
+        let fetcher = build_fetcher(crate::Sites::CadComics).await;
         assert!(fetcher.is_some());
         let fetcher = fetcher.unwrap();
         assert!(fetcher.last().await.is_ok());
@@ -186,6 +191,15 @@ mod test {
     #[tokio::test]
     async fn test_joy_of_tech() {
         let fetcher = build_fetcher(crate::Sites::JoyOfTech).await;
+        assert!(fetcher.is_some());
+        let fetcher = fetcher.unwrap();
+        assert!(fetcher.last().await.is_ok());
+        assert!(fetcher.random().await.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_good_tech_things() {
+        let fetcher = build_fetcher(crate::Sites::GoodTechThings).await;
         assert!(fetcher.is_some());
         let fetcher = fetcher.unwrap();
         assert!(fetcher.last().await.is_ok());
