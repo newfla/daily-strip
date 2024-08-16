@@ -139,12 +139,14 @@ async fn get_content_background(
 impl eframe::App for App {
     fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
         let strip = self.get_content();
+        let mut sites: Vec<_> = Sites::iter().collect();
+        sites.sort_by_key(|s| format!("{s}"));
         TopBottomPanel::bottom("my_panel").show(ctx, |ui| {
             ui.horizontal(|ui| {
                 ComboBox::from_label("")
                     .selected_text(format!("{:?}", self.source))
                     .show_ui(ui, |ui| {
-                        for site in Sites::iter() {
+                        for site in sites.into_iter() {
                             ui.selectable_value(&mut self.source, site, format!("{}", site));
                         }
                     });
