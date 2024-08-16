@@ -14,3 +14,5 @@ Comic strips viewer
 - [oglaf](https://www.oglaf.com) [NSFW]
 - [CTRL+ALT+DEL](https://cad-comic.com/)
 - [The Joy of Tech](https://www.joyoftech.com/joyoftech/jotblog/) 
+- [Good Tech Things](https://www.goodtechthings.com/)
+- [Three Word Phrase](https://threewordphrase.com/index.htm)
