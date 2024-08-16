@@ -25,6 +25,7 @@ impl Fetcher for FetcherImpl {
             Sites::CadComics => self.reload_cmd().await,
             Sites::JoyOfTech => self.reload_joy_of_tech().await,
             Sites::GoodTechThings => self.reload_gt2().await,
+            Sites::ThreeWordPhrase => self.reload_three_word_phrase().await,
         }
     }
 
@@ -40,6 +41,7 @@ impl Fetcher for FetcherImpl {
             Sites::CadComics => self.last_cmd().await,
             Sites::JoyOfTech => self.last_joy_of_tech().await,
             Sites::GoodTechThings => self.last_gt2().await,
+            Sites::ThreeWordPhrase => self.last_three_word_phrase().await,
         }
     }
 
@@ -55,6 +57,7 @@ impl Fetcher for FetcherImpl {
             Sites::CadComics => self.random_cmd().await,
             Sites::JoyOfTech => self.random_joy_of_tech().await,
             Sites::GoodTechThings => self.random_gt2().await,
+            Sites::ThreeWordPhrase => self.random_three_word_phrase().await,
         }
     }
 }
@@ -328,6 +331,37 @@ impl FetcherImpl {
         }
     }
 
+    async fn reload_three_word_phrase(&mut self) -> Result<()> {
+        let data = reqwest::get(self.site.fetch_url()).await?.text().await?;
+        let frag = Html::parse_document(&data);
+        let selector = Selector::parse("span.links a").unwrap();
+        let data: Vec<_> = frag
+            .select(&selector)
+            .map(|element| {
+                (
+                    element.inner_html().trim().to_string(),
+                    element.value().attr("href"),
+                )
+            })
+            .filter(|(title, url)| !title.is_empty() && url.is_some())
+            .map(|(title, url)| Strip {
+                title,
+                url: format!(
+                    "https://{}/{}",
+                    self.site.homepage(),
+                    url.unwrap().to_owned()
+                ),
+            })
+            .collect();
+        match data.len() {
+            0 => bail!(FetcherErrors::Error404),
+            _ => {
+                self.posts = Some(data);
+                Ok(())
+            }
+        }
+    }
+
     async fn last_turnoff_us(&self) -> Result<Strip> {
         match self.last_content().as_ref() {
             Some(content) => self.parse_turnoff_us_content(content).await,
@@ -391,6 +425,16 @@ impl FetcherImpl {
         }
     }
 
+    async fn last_three_word_phrase(&self) -> Result<Strip> {
+        match self.last_content().as_ref() {
+            Some(content) => {
+                self.parse_three_word_phrase_content(content, self.site.homepage())
+                    .await
+            }
+            None => bail!(FetcherErrors::Error404),
+        }
+    }
+
     async fn random_turnoff_us(&self) -> Result<Strip> {
         match self.random_content().as_ref() {
             Some(content) => self.parse_turnoff_us_content(content).await,
@@ -450,6 +494,16 @@ impl FetcherImpl {
     async fn random_gt2(&self) -> Result<Strip> {
         match self.random_content().as_ref() {
             Some(content) => self.parse_gt2_content(content).await,
+            None => bail!(FetcherErrors::Error404),
+        }
+    }
+
+    async fn random_three_word_phrase(&self) -> Result<Strip> {
+        match self.random_content().as_ref() {
+            Some(content) => {
+                self.parse_three_word_phrase_content(content, self.site.homepage())
+                    .await
+            }
             None => bail!(FetcherErrors::Error404),
         }
     }
@@ -539,6 +593,21 @@ impl FetcherImpl {
         Ok(Strip {
             title: content.title.clone(),
             url,
+        })
+    }
+
+    async fn parse_three_word_phrase_content(
+        &self,
+        content: &Strip,
+        base_url: &str,
+    ) -> Result<Strip> {
+        let data = reqwest::get(&content.url).await?.text().await?;
+        let url = Self::parse_first_occurency_blocking(&data, "td center img", "src")
+            .ok_or(FetcherErrors::Error404)?
+            .replace("..", &content.title);
+        Ok(Strip {
+            title: content.title.clone(),
+            url: format!("https://{}/{}", base_url, url),
         })
     }
 
