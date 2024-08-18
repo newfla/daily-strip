@@ -105,7 +105,7 @@ impl Display for Sites {
             Sites::Goomics => "Goomics",
             Sites::Xkcd => "xkcd",
             Sites::DinosaurComics => "Dinosaur Comics",
-            Sites::Oglaf => "Oglaf",
+            Sites::Oglaf => "Oglaf [NSFW]",
             Sites::CadComics => "CTRL+ALT+DEL",
             Sites::JoyOfTech => "The Joy of Tech",
             Sites::GoodTechThings => "Good Tech Things",
@@ -129,7 +129,7 @@ mod test {
     }
 
     #[tokio::test]
-    async fn test_monkeyuser() {
+    async fn test_monkey_user() {
         let fetcher = build_fetcher(crate::Sites::MonkeyUser).await;
         assert!(fetcher.is_some());
         let fetcher = fetcher.unwrap();
@@ -191,7 +191,6 @@ mod test {
         assert!(fetcher.random().await.is_ok());
     }
 
-    #[ignore]
     #[tokio::test]
     async fn test_joy_of_tech() {
         let fetcher = build_fetcher(crate::Sites::JoyOfTech).await;
