@@ -16,9 +16,12 @@ impl FetcherImpl {
                 title.as_ref().is_some_and(|title| !title.is_empty())
                     && link.as_ref().is_some_and(|link| !link.is_empty())
             })
-            .map(|(name, link)| Strip {
+            .enumerate()
+            .map(|(idx, (name, link))| Strip {
                 title: name.unwrap(),
                 url: link.unwrap(),
+                idx,
+                strip_type: crate::StripType::Unknown,
             })
             .collect();
         match data.len() {
@@ -38,6 +41,8 @@ impl FetcherImpl {
         Ok(Strip {
             title: content.title.to_string(),
             url: "https://".to_string() + self.site.homepage() + &url,
+            idx: content.idx,
+            strip_type: content.strip_type,
         })
     }
 }

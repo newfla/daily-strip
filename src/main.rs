@@ -2,8 +2,7 @@ use cached::proc_macro::cached;
 use cached::SizedCache;
 use daily_strip::{build_fetcher, Sites, Strip, Url};
 use eframe::egui::{
-    ahash::HashMap, CentralPanel, ComboBox, Label, Layout, RadioButton, TopBottomPanel,
-    ViewportBuilder,
+    ahash::HashMap, CentralPanel, ComboBox, Label, Layout, TopBottomPanel, ViewportBuilder,
 };
 use std::{collections::hash_map::Entry::Vacant, hash::Hash, sync::Arc};
 
@@ -19,6 +18,8 @@ type Fetcher = Arc<dyn daily_strip::Fetcher + Send + Sync + 'static>;
 enum RequestType {
     Last,
     Random,
+    Next(Option<usize>),
+    Prev(Option<usize>),
 }
 
 impl Default for RequestType {
@@ -131,6 +132,9 @@ async fn get_content_background(
         return match req.ty {
             RequestType::Last => fetcher.last().await.ok(),
             RequestType::Random => fetcher.random().await.ok(),
+            RequestType::Next(Some(idx)) => fetcher.next(idx).await.ok(),
+            RequestType::Prev(Some(idx)) => fetcher.prev(idx).await.ok(),
+            _ => None,
         };
     }
     None
@@ -150,30 +154,45 @@ impl eframe::App for App {
                             ui.selectable_value(&mut self.source, site, format!("{}", site));
                         }
                     });
+
                 let homepage = self.source.homepage();
                 ui.hyperlink_to(homepage, "https://".to_owned() + homepage);
-                ui.radio_value(
-                    &mut self.mode,
-                    RequestType::Last,
-                    format!("{:?}", RequestType::Last),
-                );
 
-                if ui
-                    .add(RadioButton::new(
-                        self.mode == RequestType::Random,
-                        format!("{:?}", RequestType::Random),
-                    ))
-                    .clicked()
-                {
+                ui.separator();
+
+                let prev_available = strip.as_ref().map(Strip::has_prev).unwrap_or(false);
+                let next_available = strip.as_ref().map(Strip::has_next).unwrap_or(false);
+
+                ui.add_enabled_ui(prev_available, |ui| {
+                    if ui.button("Prev").clicked() {
+                        self.mode = RequestType::Prev(strip.as_ref().map(|s| s.idx));
+                        force_refresh()
+                    }
+                });
+
+                ui.add_enabled_ui(next_available, |ui| {
+                    if ui.button("Next").clicked() {
+                        self.mode = RequestType::Next(strip.as_ref().map(|s| s.idx));
+                        force_refresh()
+                    }
+                });
+
+                ui.add_enabled_ui(next_available, |ui| {
+                    if ui.button("Last").clicked() {
+                        self.mode = RequestType::Last;
+                        force_refresh()
+                    }
+                });
+
+                if ui.button("Random").clicked() {
                     self.mode = RequestType::Random;
                     force_refresh()
                 }
-                if ui.button("REFRESH").clicked() {
-                    force_refresh()
-                }
+
                 if let Some(content) = strip.as_ref() {
                     ui.with_layout(Layout::right_to_left(eframe::egui::Align::Center), |ui| {
-                        ui.add(Label::new(&content.title).truncate())
+                        ui.add(Label::new(&content.title).truncate());
+                        ui.separator();
                     });
                 }
             });

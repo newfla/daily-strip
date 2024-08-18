@@ -18,11 +18,15 @@ impl FetcherImpl {
                         .as_ref()
                         .is_some_and(|description| !description.is_empty())
             })
-            .map(|(title, url)| Strip {
+            .enumerate()
+            .map(|(idx, (title, url))| Strip {
                 title: title.unwrap(),
                 url: url.unwrap(),
+                idx,
+                strip_type: crate::StripType::Unknown,
             })
             .collect();
+
         match data.len() {
             0 => bail!(FetcherErrors::Error404),
             _ => {
@@ -40,6 +44,8 @@ impl FetcherImpl {
         Ok(Strip {
             title: content.title.to_string(),
             url,
+            idx: content.idx,
+            strip_type: content.strip_type,
         })
     }
 }

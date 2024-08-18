@@ -19,13 +19,16 @@ impl FetcherImpl {
                 )
             })
             .filter(|(title, url)| !title.is_empty() && url.is_some())
-            .map(|(title, url)| Strip {
+            .enumerate()
+            .map(|(idx, (title, url))| Strip {
                 title,
                 url: format!(
                     "https://{}/{}",
                     self.site.homepage(),
                     url.unwrap().to_owned()
                 ),
+                idx,
+                strip_type: crate::StripType::Unknown,
             })
             .collect();
         match data.len() {
@@ -45,6 +48,8 @@ impl FetcherImpl {
         Ok(Strip {
             title: content.title.clone(),
             url: format!("https://{}/{}", self.site.homepage(), url),
+            idx: content.idx,
+            strip_type: content.strip_type,
         })
     }
 }

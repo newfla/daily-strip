@@ -14,7 +14,7 @@ use async_trait::async_trait;
 use rand::{thread_rng, Rng};
 use scraper::{Html, Selector};
 
-use crate::{Fetcher, FetcherErrors, Sites, Strip, Url};
+use crate::{Fetcher, FetcherErrors, Sites, Strip, StripType, Url};
 
 struct FetcherImpl {
     site: Sites,
@@ -24,7 +24,7 @@ struct FetcherImpl {
 #[async_trait]
 impl Fetcher for FetcherImpl {
     async fn reload(&mut self) -> Result<()> {
-        match self.site {
+        let res = match self.site {
             Sites::TurnoffUs => self.reload_turnoff_us().await,
             Sites::MonkeyUser => self.reload_monkey_user().await,
             Sites::BonkersWorld => self.reload_cornet_comics().await,
@@ -36,7 +36,9 @@ impl Fetcher for FetcherImpl {
             Sites::JoyOfTech => self.reload_joy_of_tech().await,
             Sites::GoodTechThings => self.reload_gt2().await,
             Sites::ThreeWordPhrase => self.reload_three_word_phrase().await,
-        }
+        };
+        self.set_strip_type();
+        res
     }
 
     async fn last(&self) -> Result<Strip> {
@@ -52,6 +54,24 @@ impl Fetcher for FetcherImpl {
             None => bail!(FetcherErrors::Error404),
         }
     }
+
+    async fn next(&self, idx: usize) -> Result<Strip> {
+        if idx == 0 {
+            bail!(FetcherErrors::Error404)
+        }
+
+        match self.idx_content(idx - 1) {
+            Some(content) => self.parse_content(content).await,
+            None => bail!(FetcherErrors::Error404),
+        }
+    }
+
+    async fn prev(&self, idx: usize) -> Result<Strip> {
+        match self.idx_content(idx + 1) {
+            Some(content) => self.parse_content(content).await,
+            None => bail!(FetcherErrors::Error404),
+        }
+    }
 }
 
 pub async fn build_fetcher(site: Sites) -> Option<impl Fetcher> {
@@ -61,6 +81,21 @@ pub async fn build_fetcher(site: Sites) -> Option<impl Fetcher> {
 }
 
 impl FetcherImpl {
+    fn set_strip_type(&mut self) {
+        if let Some(data) = self.posts.as_deref_mut() {
+            if let Some(elem) = data.first_mut() {
+                elem.strip_type = StripType::First;
+            }
+            if let Some(elem) = data.last_mut() {
+                elem.strip_type = StripType::Last;
+            }
+
+            if data.len() == 1 {
+                data.first_mut().unwrap().strip_type = StripType::Unique
+            }
+        }
+    }
+
     fn last_content(&self) -> Option<&Strip> {
         match self.posts.as_ref() {
             Some(data) => data.first(),
@@ -73,6 +108,10 @@ impl FetcherImpl {
         self.posts
             .as_ref()
             .and_then(|data| data.get(random.gen_range(0..data.len())))
+    }
+
+    fn idx_content(&self, idx: usize) -> Option<&Strip> {
+        self.posts.as_ref().and_then(|data| data.get(idx))
     }
 
     async fn parse_content(&self, content: &Strip) -> Result<Strip> {

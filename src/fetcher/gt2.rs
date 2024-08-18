@@ -18,9 +18,12 @@ impl FetcherImpl {
                         .as_ref()
                         .is_some_and(|description| !description.is_empty())
             })
-            .map(|(title, content)| Strip {
+            .enumerate()
+            .map(|(idx, (title, content))| Strip {
                 title: title.unwrap(),
                 url: content.unwrap(),
+                idx,
+                strip_type: crate::StripType::Unknown,
             })
             .collect();
         match data.len() {
@@ -39,6 +42,8 @@ impl FetcherImpl {
         Ok(Strip {
             title: content.title.clone(),
             url,
+            idx: content.idx,
+            strip_type: content.strip_type,
         })
     }
 }

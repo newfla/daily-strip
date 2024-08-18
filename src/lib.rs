@@ -36,12 +36,34 @@ pub trait Fetcher {
     async fn reload(&mut self) -> Result<()>;
     async fn last(&self) -> Result<Strip>;
     async fn random(&self) -> Result<Strip>;
+    async fn next(&self, idx: usize) -> Result<Strip>;
+    async fn prev(&self, idx: usize) -> Result<Strip>;
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum StripType {
+    First,
+    Unknown,
+    Last,
+    Unique,
 }
 
 #[derive(Debug, Clone)]
 pub struct Strip {
     pub title: String,
     pub url: String,
+    pub idx: usize,
+    strip_type: StripType,
+}
+
+impl Strip {
+    pub fn has_next(&self) -> bool {
+        self.strip_type != StripType::First && self.strip_type != StripType::Unique
+    }
+
+    pub fn has_prev(&self) -> bool {
+        self.strip_type != StripType::Last && self.strip_type != StripType::Unique
+    }
 }
 
 #[derive(Error, Debug)]

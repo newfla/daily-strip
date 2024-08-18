@@ -17,7 +17,8 @@ impl FetcherImpl {
             .zip(frag.select(&selector_url))
             .map(|(a_title, img_url)| (a_title.inner_html(), img_url.value().attr("src")))
             .filter(|(title, thumb_url)| !title.is_empty() && thumb_url.is_some())
-            .map(|(name, thumb_url)| Strip {
+            .enumerate()
+            .map(|(idx, (name, thumb_url))| Strip {
                 title: name.trim().to_string(),
                 url: self.site.fetch_url().to_owned()
                     + &thumb_url
@@ -25,6 +26,8 @@ impl FetcherImpl {
                         .to_string()
                         .replace("thumbs/", "")
                         .replace("_thumbnail", ""),
+                idx,
+                strip_type: crate::StripType::Unknown,
             })
             .collect();
         match data.len() {

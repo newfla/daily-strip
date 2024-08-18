@@ -22,9 +22,12 @@ impl FetcherImpl {
                 )
             })
             .filter(|(title, url)| !title.is_empty() && url.is_some())
-            .map(|(title, url)| Strip {
+            .enumerate()
+            .map(|(idx, (title, url))| Strip {
                 title,
                 url: self.site.fetch_url().to_owned() + url.unwrap(),
+                idx,
+                strip_type: crate::StripType::Unknown,
             })
             .collect();
 
@@ -45,6 +48,8 @@ impl FetcherImpl {
         Ok(Strip {
             title: content.title.to_string(),
             url: self.site.fetch_url().to_owned() + &url,
+            idx: content.idx,
+            strip_type: content.strip_type,
         })
     }
 }

@@ -12,11 +12,14 @@ impl FetcherImpl {
         let selector = Selector::parse("h3 a").unwrap();
         let data: Vec<_> = frag
             .select(&selector)
-            .map(|elem| {
+            .enumerate()
+            .map(|(idx, elem)| {
                 let url = elem.value().attr("href").unwrap().to_owned();
                 Strip {
                     title: format!("https://{}", self.site.homepage()),
                     url,
+                    idx,
+                    strip_type: crate::StripType::Unknown,
                 }
             })
             .collect();
@@ -37,6 +40,11 @@ impl FetcherImpl {
 
         let title = Self::parse_first_occurency_blocking(&data, "p.Maintext img", "alt")
             .ok_or(FetcherErrors::Error404)?;
-        Ok(Strip { title, url })
+        Ok(Strip {
+            title,
+            url,
+            idx: content.idx,
+            strip_type: content.strip_type,
+        })
     }
 }

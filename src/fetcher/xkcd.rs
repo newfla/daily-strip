@@ -12,10 +12,12 @@ impl FetcherImpl {
             .ok_or(FetcherErrors::Error404)?
             .replace('/', "");
         let mut data = Vec::new();
-        for i in (1..(1 + last.parse::<usize>()?)).rev() {
+        for idx in (1..(1 + last.parse::<usize>()?)).rev() {
             data.push(Strip {
-                title: i.to_string(),
-                url: self.site.fetch_url().to_owned() + "/" + &i.to_string(),
+                title: idx.to_string(),
+                url: self.site.fetch_url().to_owned() + "/" + &idx.to_string(),
+                idx,
+                strip_type: crate::StripType::Unknown,
             })
         }
         self.posts = Some(data);
@@ -31,6 +33,8 @@ impl FetcherImpl {
         Ok(Strip {
             title: content.title.to_string(),
             url,
+            idx: content.idx,
+            strip_type: content.strip_type,
         })
     }
 }

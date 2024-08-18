@@ -25,9 +25,12 @@ impl FetcherImpl {
                 )
             })
             .filter(|(_, url)| url.is_some())
-            .map(|(name, url)| Strip {
-                title: name,
+            .enumerate()
+            .map(|(idx, (title, url))| Strip {
+                title,
                 url: url.unwrap(),
+                idx,
+                strip_type: crate::StripType::Unknown,
             })
             .collect();
         match data.len() {
@@ -47,6 +50,8 @@ impl FetcherImpl {
         Ok(Strip {
             title: content.title.to_string(),
             url,
+            idx: content.idx,
+            strip_type: content.strip_type,
         })
     }
 }
