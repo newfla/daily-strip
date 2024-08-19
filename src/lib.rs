@@ -23,6 +23,7 @@ pub enum Sites {
     JoyOfTech,
     GoodTechThings,
     ThreeWordPhrase,
+    ASofterWorld,
 }
 
 impl Default for Sites {
@@ -98,6 +99,7 @@ impl Url for Sites {
             // Incomplete RSS feed.
             Sites::GoodTechThings => "https://www.goodtechthings.com/rss/",
             Sites::ThreeWordPhrase => "https://threewordphrase.com/archive.htm",
+            Self::ASofterWorld => "https://www.asofterworld.com/archive.php",
         }
     }
 
@@ -114,6 +116,7 @@ impl Url for Sites {
             Sites::JoyOfTech => "joyoftech.com/joyoftech",
             Sites::GoodTechThings => "goodtechthings.com",
             Sites::ThreeWordPhrase => "threewordphrase.com",
+            Sites::ASofterWorld => "asofterworld.com",
         }
     }
 }
@@ -132,6 +135,7 @@ impl Display for Sites {
             Sites::JoyOfTech => "The Joy of Tech",
             Sites::GoodTechThings => "Good Tech Things",
             Sites::ThreeWordPhrase => "Three Word Phrase",
+            Sites::ASofterWorld => "a softer world",
         };
         write!(f, "{}", name)
     }
@@ -234,6 +238,15 @@ mod test {
     #[tokio::test]
     async fn test_three_word_phrase() {
         let fetcher = build_fetcher(crate::Sites::ThreeWordPhrase).await;
+        assert!(fetcher.is_some());
+        let fetcher = fetcher.unwrap();
+        assert!(fetcher.last().await.is_ok());
+        assert!(fetcher.random().await.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_a_softer_world() {
+        let fetcher = build_fetcher(crate::Sites::ASofterWorld).await;
         assert!(fetcher.is_some());
         let fetcher = fetcher.unwrap();
         assert!(fetcher.last().await.is_ok());
