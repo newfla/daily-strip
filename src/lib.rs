@@ -256,8 +256,8 @@ mod test {
         assert!(fetcher.last().await.is_ok());
         assert!(fetcher.random().await.is_ok());
     }
-      
-    #[tokio::test]  
+
+    #[tokio::test]
     async fn test_butter_safe() {
         let fetcher = build_fetcher(crate::Sites::ButterSafe).await;
         assert!(fetcher.is_some());
