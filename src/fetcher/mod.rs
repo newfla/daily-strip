@@ -1,3 +1,4 @@
+mod butter_safe;
 mod cad_comics;
 mod cornet_comics;
 mod dinosaur_comics;
@@ -38,6 +39,7 @@ impl Fetcher for FetcherImpl {
             Sites::GoodTechThings => self.reload_gt2().await,
             Sites::ThreeWordPhrase => self.reload_three_word_phrase().await,
             Sites::ASofterWorld => self.reload_softer_world().await,
+            Sites::ButterSafe => self.reload_butter_safe().await,
         };
         self.set_strip_type();
         res
@@ -130,6 +132,7 @@ impl FetcherImpl {
             Sites::GoodTechThings => self.parse_gt2_content(content).await,
             Sites::ThreeWordPhrase => self.parse_three_word_phrase_content(content).await,
             Sites::ASofterWorld => self.parse_softer_world_content(content).await,
+            Sites::ButterSafe => self.parse_butter_safe_content(content).await,
         }
     }
 
