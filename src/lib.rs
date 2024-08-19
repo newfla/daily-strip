@@ -23,6 +23,7 @@ pub enum Sites {
     JoyOfTech,
     GoodTechThings,
     ThreeWordPhrase,
+    ButterSafe,
 }
 
 impl Default for Sites {
@@ -98,6 +99,7 @@ impl Url for Sites {
             // Incomplete RSS feed.
             Sites::GoodTechThings => "https://www.goodtechthings.com/rss/",
             Sites::ThreeWordPhrase => "https://threewordphrase.com/archive.htm",
+            Sites::ButterSafe => "https://www.buttersafe.com/archive",
         }
     }
 
@@ -114,6 +116,7 @@ impl Url for Sites {
             Sites::JoyOfTech => "joyoftech.com/joyoftech",
             Sites::GoodTechThings => "goodtechthings.com",
             Sites::ThreeWordPhrase => "threewordphrase.com",
+            Sites::ButterSafe => "buttersafe.com",
         }
     }
 }
@@ -132,6 +135,7 @@ impl Display for Sites {
             Sites::JoyOfTech => "The Joy of Tech",
             Sites::GoodTechThings => "Good Tech Things",
             Sites::ThreeWordPhrase => "Three Word Phrase",
+            Sites::ButterSafe => "BUTTERSAFE",
         };
         write!(f, "{}", name)
     }
@@ -234,6 +238,15 @@ mod test {
     #[tokio::test]
     async fn test_three_word_phrase() {
         let fetcher = build_fetcher(crate::Sites::ThreeWordPhrase).await;
+        assert!(fetcher.is_some());
+        let fetcher = fetcher.unwrap();
+        assert!(fetcher.last().await.is_ok());
+        assert!(fetcher.random().await.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_butter_safe() {
+        let fetcher = build_fetcher(crate::Sites::ButterSafe).await;
         assert!(fetcher.is_some());
         let fetcher = fetcher.unwrap();
         assert!(fetcher.last().await.is_ok());
