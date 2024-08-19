@@ -144,7 +144,7 @@ impl eframe::App for App {
     fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
         let strip = self.get_content();
         let mut sites: Vec<_> = Sites::iter().collect();
-        sites.sort_by_key(|s| format!("{s}"));
+        sites.sort_by_key(|s| format!("{s}").to_lowercase());
         TopBottomPanel::bottom("my_panel").show(ctx, |ui| {
             ui.horizontal(|ui| {
                 ComboBox::from_label("")
