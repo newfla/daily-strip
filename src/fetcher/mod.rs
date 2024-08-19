@@ -6,6 +6,7 @@ mod gt2;
 mod joy_of_tech;
 mod monkey_user;
 mod oglaf;
+mod softer_world;
 mod three_word_phrase;
 mod turnoff_us;
 mod xkcd;
@@ -37,6 +38,7 @@ impl Fetcher for FetcherImpl {
             Sites::JoyOfTech => self.reload_joy_of_tech().await,
             Sites::GoodTechThings => self.reload_gt2().await,
             Sites::ThreeWordPhrase => self.reload_three_word_phrase().await,
+            Sites::ASofterWorld => self.reload_softer_world().await,
             Sites::ButterSafe => self.reload_butter_safe().await,
         };
         self.set_strip_type();
@@ -129,6 +131,7 @@ impl FetcherImpl {
             Sites::JoyOfTech => self.parse_joy_of_tech_content(content).await,
             Sites::GoodTechThings => self.parse_gt2_content(content).await,
             Sites::ThreeWordPhrase => self.parse_three_word_phrase_content(content).await,
+            Sites::ASofterWorld => self.parse_softer_world_content(content).await,
             Sites::ButterSafe => self.parse_butter_safe_content(content).await,
         }
     }
