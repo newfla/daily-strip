@@ -177,7 +177,7 @@ impl eframe::App for App {
                     }
                 });
 
-                ui.add_enabled_ui(next_available, |ui| {
+                ui.add_enabled_ui(next_available || strip.is_none(), |ui| {
                     if ui.button("Last").clicked() {
                         self.mode = RequestType::Last;
                         force_refresh()
