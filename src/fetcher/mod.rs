@@ -6,6 +6,7 @@ mod gt2;
 mod joy_of_tech;
 mod monkey_user;
 mod oglaf;
+mod questionable_content;
 mod softer_world;
 mod three_word_phrase;
 mod turnoff_us;
@@ -40,6 +41,7 @@ impl Fetcher for FetcherImpl {
             Sites::ThreeWordPhrase => self.reload_three_word_phrase().await,
             Sites::ASofterWorld => self.reload_softer_world().await,
             Sites::ButterSafe => self.reload_butter_safe().await,
+            Sites::QuestionableContent => self.reload_questionable_content().await,
         };
         self.set_strip_type();
         res
@@ -133,6 +135,7 @@ impl FetcherImpl {
             Sites::ThreeWordPhrase => self.parse_three_word_phrase_content(content).await,
             Sites::ASofterWorld => self.parse_softer_world_content(content).await,
             Sites::ButterSafe => self.parse_butter_safe_content(content).await,
+            Sites::QuestionableContent => self.parse_questionable_content_content(content).await,
         }
     }
 
