@@ -25,6 +25,7 @@ pub enum Sites {
     ThreeWordPhrase,
     ASofterWorld,
     ButterSafe,
+    QuestionableContent,
 }
 
 impl Default for Sites {
@@ -102,6 +103,7 @@ impl Url for Sites {
             Sites::ThreeWordPhrase => "https://threewordphrase.com/archive.htm",
             Self::ASofterWorld => "https://www.asofterworld.com/archive.php",
             Sites::ButterSafe => "https://www.buttersafe.com/archive",
+            Sites::QuestionableContent => "http://www.questionablecontent.net/QCRSS.xml",
         }
     }
 
@@ -120,6 +122,7 @@ impl Url for Sites {
             Sites::ThreeWordPhrase => "threewordphrase.com",
             Sites::ASofterWorld => "asofterworld.com",
             Sites::ButterSafe => "buttersafe.com",
+            Sites::QuestionableContent => "questionablecontent.net",
         }
     }
 }
@@ -140,6 +143,7 @@ impl Display for Sites {
             Sites::ThreeWordPhrase => "Three Word Phrase",
             Sites::ASofterWorld => "a softer world",
             Sites::ButterSafe => "BUTTERSAFE",
+            Sites::QuestionableContent => "Questionable Content",
         };
         write!(f, "{}", name)
     }
@@ -260,6 +264,15 @@ mod test {
     #[tokio::test]
     async fn test_butter_safe() {
         let fetcher = build_fetcher(crate::Sites::ButterSafe).await;
+        assert!(fetcher.is_some());
+        let fetcher = fetcher.unwrap();
+        assert!(fetcher.last().await.is_ok());
+        assert!(fetcher.random().await.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_questionable_content() {
+        let fetcher = build_fetcher(crate::Sites::QuestionableContent).await;
         assert!(fetcher.is_some());
         let fetcher = fetcher.unwrap();
         assert!(fetcher.last().await.is_ok());
