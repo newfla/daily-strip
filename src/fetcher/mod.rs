@@ -10,6 +10,7 @@ mod questionable_content;
 mod softer_world;
 mod three_word_phrase;
 mod turnoff_us;
+mod work_chronicles;
 mod xkcd;
 
 use anyhow::{bail, Result};
@@ -42,6 +43,7 @@ impl Fetcher for FetcherImpl {
             Sites::ASofterWorld => self.reload_softer_world().await,
             Sites::ButterSafe => self.reload_butter_safe().await,
             Sites::QuestionableContent => self.reload_questionable_content().await,
+            Sites::WorkChronicles => self.reload_work_chronicles().await,
         };
         self.set_strip_type();
         res
@@ -136,6 +138,7 @@ impl FetcherImpl {
             Sites::ASofterWorld => self.parse_softer_world_content(content).await,
             Sites::ButterSafe => self.parse_butter_safe_content(content).await,
             Sites::QuestionableContent => self.parse_questionable_content_content(content).await,
+            Sites::WorkChronicles => self.parse_work_chronicles_content(content).await,
         }
     }
 
@@ -162,5 +165,13 @@ impl FetcherImpl {
                     .replace(self.site.fetch_url(), "")
             })
             .last()
+    }
+
+    fn reverse_strip_vec(data: &mut [Strip]) {
+        data.reverse();
+
+        let data_len = data.len();
+        data.iter_mut()
+            .for_each(|strip| strip.idx = data_len - strip.idx);
     }
 }

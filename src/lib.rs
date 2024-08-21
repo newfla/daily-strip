@@ -26,6 +26,7 @@ pub enum Sites {
     ASofterWorld,
     ButterSafe,
     QuestionableContent,
+    WorkChronicles,
 }
 
 impl Default for Sites {
@@ -101,9 +102,10 @@ impl Url for Sites {
             // Incomplete RSS feed.
             Sites::GoodTechThings => "https://www.goodtechthings.com/rss/",
             Sites::ThreeWordPhrase => "https://threewordphrase.com/archive.htm",
-            Self::ASofterWorld => "https://www.asofterworld.com/archive.php",
+            Sites::ASofterWorld => "https://www.asofterworld.com/archive.php",
             Sites::ButterSafe => "https://www.buttersafe.com/archive",
             Sites::QuestionableContent => "http://www.questionablecontent.net/QCRSS.xml",
+            Sites::WorkChronicles => "https://workchronicles.substack.com",
         }
     }
 
@@ -123,6 +125,7 @@ impl Url for Sites {
             Sites::ASofterWorld => "asofterworld.com",
             Sites::ButterSafe => "buttersafe.com",
             Sites::QuestionableContent => "questionablecontent.net",
+            Sites::WorkChronicles => "workchronicles.com",
         }
     }
 }
@@ -144,6 +147,7 @@ impl Display for Sites {
             Sites::ASofterWorld => "a softer world",
             Sites::ButterSafe => "BUTTERSAFE",
             Sites::QuestionableContent => "Questionable Content",
+            Sites::WorkChronicles => "Work Chronicles",
         };
         write!(f, "{}", name)
     }
@@ -273,6 +277,15 @@ mod test {
     #[tokio::test]
     async fn test_questionable_content() {
         let fetcher = build_fetcher(crate::Sites::QuestionableContent).await;
+        assert!(fetcher.is_some());
+        let fetcher = fetcher.unwrap();
+        assert!(fetcher.last().await.is_ok());
+        assert!(fetcher.random().await.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_work_chronicles_content() {
+        let fetcher = build_fetcher(crate::Sites::WorkChronicles).await;
         assert!(fetcher.is_some());
         let fetcher = fetcher.unwrap();
         assert!(fetcher.last().await.is_ok());

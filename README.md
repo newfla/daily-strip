@@ -19,3 +19,4 @@ Comic strips viewer
 - [a softer world](https://www.asofterworld.com/)
 - [BUTTERSAFE](https://www.buttersafe.com)
 - [Questionable Content](https://questionablecontent.net/)
+- [Work Chronicles](https://workchronicles.com/)
