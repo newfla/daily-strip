@@ -24,11 +24,7 @@ impl FetcherImpl {
             })
             .skip(1)
             .collect();
-        data.reverse();
-
-        let data_len = data.len();
-        data.iter_mut()
-            .for_each(|strip| strip.idx = data_len - strip.idx);
+        Self::reverse_strip_vec(&mut data);
 
         match data.len() {
             0 => bail!(FetcherErrors::Error404),
