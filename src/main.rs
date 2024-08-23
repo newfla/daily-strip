@@ -1,13 +1,17 @@
+use anyhow::Result;
 use cached::proc_macro::cached;
 use cached::SizedCache;
 use daily_strip::{build_fetcher, Sites, Strip, Url};
 use eframe::egui::{
     ahash::HashMap, CentralPanel, ComboBox, Label, Layout, TopBottomPanel, ViewportBuilder,
 };
-use std::{collections::hash_map::Entry::Vacant, hash::Hash, sync::Arc};
+use egui_file_dialog::FileDialog;
+use std::{collections::hash_map::Entry::Vacant, hash::Hash, path::PathBuf, sync::Arc};
 
 use strum::IntoEnumIterator;
 use tokio::{
+    fs::File,
+    io::AsyncWriteExt,
     runtime::{Builder, Runtime},
     sync::mpsc::{channel, Receiver, Sender},
 };
@@ -28,10 +32,15 @@ impl Default for RequestType {
     }
 }
 
-#[derive(Clone, Copy, Default, Hash, PartialEq, Eq)]
-struct Request {
-    site: Sites,
-    ty: RequestType,
+#[derive(Clone, Hash, PartialEq, Eq)]
+enum Request {
+    Strip { site: Sites, ty: RequestType },
+    Download { path: PathBuf, url: String },
+}
+
+enum Response {
+    Strip(Option<Strip>),
+    Download(Result<()>),
 }
 
 fn main() -> Result<(), eframe::Error> {
@@ -49,6 +58,7 @@ fn main() -> Result<(), eframe::Error> {
         tx: tx_req.clone(),
         rx: rx_res,
         rt: Builder::new_multi_thread().enable_all().build().unwrap(),
+        file_dialog: Some(FileDialog::new()),
     };
 
     app.start_background_task(rx_req, tx_res);
@@ -63,21 +73,22 @@ fn main() -> Result<(), eframe::Error> {
     )
 }
 struct App {
+    file_dialog: Option<FileDialog>,
     mode: RequestType,
     source: Sites,
     tx: Sender<Request>,
-    rx: Receiver<Option<Strip>>,
+    rx: Receiver<Response>,
     rt: Runtime,
 }
 
 impl App {
-    fn start_background_task(&self, rx: Receiver<Request>, tx: Sender<Option<Strip>>) {
+    fn start_background_task(&self, rx: Receiver<Request>, tx: Sender<Response>) {
         self.rt.spawn(async move { background_task(rx, tx).await });
     }
 
     fn get_content(&mut self) -> Option<Strip> {
         get_content_cached(
-            Request {
+            Request::Strip {
                 site: self.source,
                 ty: self.mode,
             },
@@ -85,22 +96,66 @@ impl App {
             &mut self.rx,
         )
     }
+
+    fn maybe_download_content(
+        &mut self,
+        strip: &Strip,
+        ctx: &eframe::egui::Context,
+    ) -> Option<Result<()>> {
+        if let Some(file_dialog) = self.file_dialog.as_mut() {
+            if let Some(path) = file_dialog.update(ctx).selected() {
+                let path = path.to_path_buf();
+                let url = strip.url.clone();
+
+                self.file_dialog = None;
+
+                let _ = self.tx.blocking_send(Request::Download { path, url });
+                return if let Some(Response::Download(res)) = self.rx.blocking_recv() {
+                    Some(res)
+                } else {
+                    None
+                };
+            }
+        }
+        None
+    }
+
+    fn open_file_dialog(&mut self, strip: &Strip) {
+        let file_name = strip.file_name();
+
+        // Workaround for state never be Closed
+        if self.file_dialog.is_none() {
+            self.file_dialog = Some(FileDialog::new())
+        }
+
+        if let Some(file_dialog) = self.file_dialog.as_mut() {
+            file_dialog.config_mut().default_file_name = file_name;
+            file_dialog.save_file();
+        }
+    }
 }
 
 #[cached(
-    ty = "SizedCache<Request, Option<Strip>>",
+    ty = "SizedCache<Request, Strip>",
     create = "{ SizedCache::with_size(10) }",
-    convert = r#"{req}"#,
-    sync_writes = true
+    convert = r#"{req.clone()}"#,
+    sync_writes = true,
+    option = true
 )]
 
 fn get_content_cached(
     req: Request,
     tx: &Sender<Request>,
-    rx: &mut Receiver<Option<Strip>>,
+    rx: &mut Receiver<Response>,
 ) -> Option<Strip> {
     let _ = tx.blocking_send(req);
-    rx.blocking_recv().flatten()
+    rx.blocking_recv().map(|elem| {
+        if let Response::Strip(strip) = elem {
+            strip
+        } else {
+            None
+        }
+    })?
 }
 
 fn force_refresh() {
@@ -108,28 +163,40 @@ fn force_refresh() {
     *lock = SizedCache::with_size(10);
 }
 
-async fn background_task(mut rx: Receiver<Request>, tx: Sender<Option<Strip>>) {
+async fn background_task(mut rx: Receiver<Request>, tx: Sender<Response>) {
     let mut fetchers: HashMap<Sites, Option<Fetcher>> = HashMap::default();
 
     while let Some(req) = rx.recv().await {
-        let content = get_content_background(req, &mut fetchers).await;
-        let _ = tx.send(content).await;
+        match req {
+            Request::Strip { site, ty } => {
+                let content = get_content_background(site, ty, &mut fetchers).await;
+                let _ = tx.send(Response::Strip(content)).await;
+            }
+            Request::Download { path, url } => {
+                let res = download_background(path, url).await;
+                let _ = tx.send(Response::Download(res)).await;
+            }
+        }
     }
 }
 
+async fn download_background(path: PathBuf, url: String) -> Result<()> {
+    let data = reqwest::get(url).await?.bytes().await?;
+    let mut file = File::create(path).await?;
+    file.write_all(&data).await?;
+    Ok(())
+}
+
 async fn get_content_background(
-    req: Request,
+    site: Sites,
+    ty: RequestType,
     fetchers: &mut HashMap<Sites, Option<Fetcher>>,
 ) -> Option<Strip> {
-    if let Vacant(e) = fetchers.entry(req.site) {
-        e.insert(
-            build_fetcher(req.site)
-                .await
-                .map(|f| Arc::new(f) as Fetcher),
-        );
+    if let Vacant(e) = fetchers.entry(site) {
+        e.insert(build_fetcher(site).await.map(|f| Arc::new(f) as Fetcher));
     }
-    if let Some(fetcher) = fetchers.get(&req.site).unwrap().as_ref() {
-        return match req.ty {
+    if let Some(Some(fetcher)) = fetchers.get(&site) {
+        return match ty {
             RequestType::Last => fetcher.last().await.ok(),
             RequestType::Random => fetcher.random().await.ok(),
             RequestType::Next(Some(idx)) => fetcher.next(idx).await.ok(),
@@ -151,7 +218,12 @@ impl eframe::App for App {
                     .selected_text(format!("{:?}", self.source))
                     .show_ui(ui, |ui| {
                         for site in sites.into_iter() {
-                            ui.selectable_value(&mut self.source, site, format!("{}", site));
+                            if ui
+                                .selectable_value(&mut self.source, site, format!("{}", site))
+                                .changed()
+                            {
+                                self.mode = RequestType::Last;
+                            }
                         }
                     });
 
@@ -192,8 +264,14 @@ impl eframe::App for App {
                 if let Some(content) = strip.as_ref() {
                     ui.with_layout(Layout::right_to_left(eframe::egui::Align::Center), |ui| {
                         ui.add(Label::new(&content.title).truncate());
+
                         ui.separator();
+
+                        if ui.button("Download").clicked() {
+                            self.open_file_dialog(content);
+                        }
                     });
+                    self.maybe_download_content(content, ctx);
                 }
             });
         });
