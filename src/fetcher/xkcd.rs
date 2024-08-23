@@ -10,13 +10,14 @@ impl FetcherImpl {
         let last = self
             .parse_meta_content_blocking(data, "og:url")
             .ok_or(FetcherErrors::Error404)?
-            .replace('/', "");
+            .replace('/', "")
+            .parse::<usize>()?;
         let mut data = Vec::new();
-        for idx in (1..(1 + last.parse::<usize>()?)).rev() {
+        for idx in (1..last + 1).rev() {
             data.push(Strip {
                 title: idx.to_string(),
                 url: self.site.fetch_url().to_owned() + "/" + &idx.to_string(),
-                idx,
+                idx: last - idx,
                 strip_type: crate::StripType::Unknown,
             })
         }

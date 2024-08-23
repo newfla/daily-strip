@@ -68,6 +68,11 @@ impl Strip {
     pub fn has_prev(&self) -> bool {
         self.strip_type != StripType::Last && self.strip_type != StripType::Unique
     }
+
+    pub fn file_name(&self) -> String {
+        let ext = self.url.split('.').rev().take(1).next().unwrap_or_default();
+        format!("{}.{ext}", self.title)
+    }
 }
 
 #[derive(Error, Debug)]
