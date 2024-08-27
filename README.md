@@ -20,3 +20,4 @@ Comic strips viewer
 - [BUTTERSAFE](https://www.buttersafe.com)
 - [Questionable Content](https://questionablecontent.net/)
 - [Work Chronicles](https://workchronicles.com/)
+- [Junior Scientist Power Hour](https://www.jspowerhour.com/)
