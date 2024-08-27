@@ -4,6 +4,7 @@ mod cornet_comics;
 mod dinosaur_comics;
 mod gt2;
 mod joy_of_tech;
+mod js_power_hour;
 mod monkey_user;
 mod oglaf;
 mod questionable_content;
@@ -44,6 +45,7 @@ impl Fetcher for FetcherImpl {
             Sites::ButterSafe => self.reload_butter_safe().await,
             Sites::QuestionableContent => self.reload_questionable_content().await,
             Sites::WorkChronicles => self.reload_work_chronicles().await,
+            Sites::JSPowerHour => self.reload_js_power_hour().await,
         };
         self.set_strip_type();
         res
@@ -139,6 +141,7 @@ impl FetcherImpl {
             Sites::ButterSafe => self.parse_butter_safe_content(content).await,
             Sites::QuestionableContent => self.parse_questionable_content_content(content).await,
             Sites::WorkChronicles => self.parse_work_chronicles_content(content).await,
+            Sites::JSPowerHour => self.parse_js_power_hour_content(content).await,
         }
     }
 
