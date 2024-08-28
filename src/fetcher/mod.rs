@@ -1,4 +1,5 @@
 mod butter_safe;
+mod buttercup_festival;
 mod cad_comics;
 mod cornet_comics;
 mod dinosaur_comics;
@@ -46,6 +47,7 @@ impl Fetcher for FetcherImpl {
             Sites::QuestionableContent => self.reload_questionable_content().await,
             Sites::WorkChronicles => self.reload_work_chronicles().await,
             Sites::JSPowerHour => self.reload_js_power_hour().await,
+            Sites::ButtercupFestival => self.reload_buttercup_festival().await,
         };
         self.set_strip_type();
         res
@@ -142,6 +144,7 @@ impl FetcherImpl {
             Sites::QuestionableContent => self.parse_questionable_content_content(content).await,
             Sites::WorkChronicles => self.parse_work_chronicles_content(content).await,
             Sites::JSPowerHour => self.parse_js_power_hour_content(content).await,
+            Sites::ButtercupFestival => self.parse_buttercup_festival_content(content).await,
         }
     }
 
@@ -172,9 +175,8 @@ impl FetcherImpl {
 
     fn reverse_strip_vec(data: &mut [Strip]) {
         data.reverse();
-
-        let data_len = data.len();
         data.iter_mut()
-            .for_each(|strip| strip.idx = data_len - strip.idx);
+            .enumerate()
+            .for_each(|(idx, strip)| strip.idx = idx);
     }
 }
