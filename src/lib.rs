@@ -30,6 +30,7 @@ pub enum Sites {
     JSPowerHour,
     ButtercupFestival,
     Achewood,
+    CatAndGirl,
 }
 
 impl Default for Sites {
@@ -117,6 +118,7 @@ impl Url for Sites {
             Sites::JSPowerHour => "https://www.jspowerhour.com/comics",
             Sites::ButtercupFestival => "https://www.buttercupfestival.com",
             Sites::Achewood => "https://achewood.com/archive_new.html",
+            Sites::CatAndGirl => "https://catandgirl.com/archive",
         }
     }
 
@@ -140,6 +142,7 @@ impl Url for Sites {
             Sites::JSPowerHour => "jspowerhour.com",
             Sites::ButtercupFestival => "buttercupfestival.com",
             Sites::Achewood => "achewood.com",
+            Sites::CatAndGirl => "catandgirl.com",
         }
     }
 }
@@ -165,6 +168,7 @@ impl Display for Sites {
             Sites::JSPowerHour => "Junior Scientist Power Hour",
             Sites::ButtercupFestival => "Buttercup Festival",
             Sites::Achewood => "achewood",
+            Sites::CatAndGirl => "Cat and Girl",
         };
         write!(f, "{}", name)
     }
@@ -334,6 +338,15 @@ mod test {
     #[tokio::test]
     async fn test_achewood() {
         let fetcher = build_fetcher(crate::Sites::Achewood).await;
+        assert!(fetcher.is_some());
+        let fetcher = fetcher.unwrap();
+        assert!(fetcher.last().await.is_ok());
+        assert!(fetcher.random().await.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_cat_and_girl() {
+        let fetcher = build_fetcher(crate::Sites::CatAndGirl).await;
         assert!(fetcher.is_some());
         let fetcher = fetcher.unwrap();
         assert!(fetcher.last().await.is_ok());
