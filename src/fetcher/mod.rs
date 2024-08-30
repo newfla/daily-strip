@@ -5,6 +5,7 @@ mod cad_comics;
 mod cat_and_girl;
 mod cornet_comics;
 mod diesel_sweeties_1_0;
+mod diesel_sweeties_3_0;
 mod dinosaur_comics;
 mod gt2;
 mod joy_of_tech;
@@ -54,6 +55,7 @@ impl Fetcher for FetcherImpl {
             Sites::Achewood => self.reload_achewood().await,
             Sites::CatAndGirl => self.reload_cat_and_girl().await,
             Sites::DieseSweeties1_0 => self.reload_diesel_sweeties_1_0().await,
+            Sites::DieseSweeties3_0 => self.reload_diesel_sweeties_3_0().await,
         };
         self.set_strip_type();
         res
@@ -154,6 +156,7 @@ impl FetcherImpl {
             Sites::Achewood => self.parse_achewood_content(content).await,
             Sites::CatAndGirl => self.parse_cat_and_girl_content(content).await,
             Sites::DieseSweeties1_0 => self.parse_diesel_sweeties_1_0_content(content).await,
+            Sites::DieseSweeties3_0 => self.parse_diesel_sweeties_3_0_content(content).await,
         }
     }
 
