@@ -4,6 +4,7 @@ mod buttercup_festival;
 mod cad_comics;
 mod cat_and_girl;
 mod cornet_comics;
+mod diesel_sweeties_1_0;
 mod dinosaur_comics;
 mod gt2;
 mod joy_of_tech;
@@ -52,6 +53,7 @@ impl Fetcher for FetcherImpl {
             Sites::ButtercupFestival => self.reload_buttercup_festival().await,
             Sites::Achewood => self.reload_achewood().await,
             Sites::CatAndGirl => self.reload_cat_and_girl().await,
+            Sites::DieseSweeties1_0 => self.reload_diesel_sweeties_1_0().await,
         };
         self.set_strip_type();
         res
@@ -151,6 +153,7 @@ impl FetcherImpl {
             Sites::ButtercupFestival => self.parse_buttercup_festival_content(content).await,
             Sites::Achewood => self.parse_achewood_content(content).await,
             Sites::CatAndGirl => self.parse_cat_and_girl_content(content).await,
+            Sites::DieseSweeties1_0 => self.parse_diesel_sweeties_1_0_content(content).await,
         }
     }
 

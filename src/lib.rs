@@ -31,6 +31,8 @@ pub enum Sites {
     ButtercupFestival,
     Achewood,
     CatAndGirl,
+    DieseSweeties1_0,
+    //DieseSweeties3_0,
 }
 
 impl Default for Sites {
@@ -119,6 +121,7 @@ impl Url for Sites {
             Sites::ButtercupFestival => "https://www.buttercupfestival.com",
             Sites::Achewood => "https://achewood.com/archive_new.html",
             Sites::CatAndGirl => "https://catandgirl.com/archive",
+            Sites::DieseSweeties1_0 => "https://www.dieselsweeties.com/archive",
         }
     }
 
@@ -143,6 +146,7 @@ impl Url for Sites {
             Sites::ButtercupFestival => "buttercupfestival.com",
             Sites::Achewood => "achewood.com",
             Sites::CatAndGirl => "catandgirl.com",
+            Sites::DieseSweeties1_0 => "dieselsweeties.com",
         }
     }
 }
@@ -169,6 +173,7 @@ impl Display for Sites {
             Sites::ButtercupFestival => "Buttercup Festival",
             Sites::Achewood => "achewood",
             Sites::CatAndGirl => "Cat and Girl",
+            Sites::DieseSweeties1_0 => "Diesel Sweeties #1.0",
         };
         write!(f, "{}", name)
     }
@@ -350,6 +355,16 @@ mod test {
         assert!(fetcher.is_some());
         let fetcher = fetcher.unwrap();
         assert!(fetcher.last().await.is_ok());
+        assert!(fetcher.random().await.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_diesel_sweeties_1_0() {
+        let fetcher = build_fetcher(crate::Sites::DieseSweeties1_0).await;
+        assert!(fetcher.is_some());
+        let fetcher = fetcher.unwrap();
+        assert!(fetcher.last().await.is_ok());
+        println!("{:?}", fetcher.last().await);
         assert!(fetcher.random().await.is_ok());
     }
 }
