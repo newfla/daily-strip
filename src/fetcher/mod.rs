@@ -1,3 +1,4 @@
+mod achewood;
 mod butter_safe;
 mod buttercup_festival;
 mod cad_comics;
@@ -48,6 +49,7 @@ impl Fetcher for FetcherImpl {
             Sites::WorkChronicles => self.reload_work_chronicles().await,
             Sites::JSPowerHour => self.reload_js_power_hour().await,
             Sites::ButtercupFestival => self.reload_buttercup_festival().await,
+            Sites::Achewood => self.reload_achewood().await,
         };
         self.set_strip_type();
         res
@@ -145,6 +147,7 @@ impl FetcherImpl {
             Sites::WorkChronicles => self.parse_work_chronicles_content(content).await,
             Sites::JSPowerHour => self.parse_js_power_hour_content(content).await,
             Sites::ButtercupFestival => self.parse_buttercup_festival_content(content).await,
+            Sites::Achewood => self.parse_achewood_content(content).await,
         }
     }
 

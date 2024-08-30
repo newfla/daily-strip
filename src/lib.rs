@@ -29,6 +29,7 @@ pub enum Sites {
     WorkChronicles,
     JSPowerHour,
     ButtercupFestival,
+    Achewood,
 }
 
 impl Default for Sites {
@@ -115,6 +116,7 @@ impl Url for Sites {
             Sites::WorkChronicles => "https://workchronicles.substack.com",
             Sites::JSPowerHour => "https://www.jspowerhour.com/comics",
             Sites::ButtercupFestival => "https://www.buttercupfestival.com",
+            Sites::Achewood => "https://achewood.com/archive_new.html",
         }
     }
 
@@ -137,6 +139,7 @@ impl Url for Sites {
             Sites::WorkChronicles => "workchronicles.com",
             Sites::JSPowerHour => "jspowerhour.com",
             Sites::ButtercupFestival => "buttercupfestival.com",
+            Sites::Achewood => "achewood.com",
         }
     }
 }
@@ -161,6 +164,7 @@ impl Display for Sites {
             Sites::WorkChronicles => "Work Chronicles",
             Sites::JSPowerHour => "Junior Scientist Power Hour",
             Sites::ButtercupFestival => "Buttercup Festival",
+            Sites::Achewood => "achewood",
         };
         write!(f, "{}", name)
     }
@@ -321,6 +325,15 @@ mod test {
     #[tokio::test]
     async fn test_buttercup_festival() {
         let fetcher = build_fetcher(crate::Sites::ButtercupFestival).await;
+        assert!(fetcher.is_some());
+        let fetcher = fetcher.unwrap();
+        assert!(fetcher.last().await.is_ok());
+        assert!(fetcher.random().await.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_achewood() {
+        let fetcher = build_fetcher(crate::Sites::Achewood).await;
         assert!(fetcher.is_some());
         let fetcher = fetcher.unwrap();
         assert!(fetcher.last().await.is_ok());
