@@ -1,6 +1,6 @@
 [package]
 name = "daily_strip"
-version = "0.1.5"
+version = "0.1.6"
 edition = "2021"
 authors = ["Flavio Bizzarri <fl.bizzarri@gmail.com>"]
 license = "Apache-2.0"
