@@ -24,3 +24,5 @@ Comic strips viewer
 - [Buttercup Festival](https://www.buttercupfestival.com)
 - [Achewood](https://achewood.com)
 - [Cat and Girl](https://catandgirl.com)
+- [DIESEL SWEETIES #1.0](https://www.dieselsweeties.com/archive)
+- [DIESEL SWEETIES #3.0](https://www.dieselsweeties.com)
