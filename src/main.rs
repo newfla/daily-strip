@@ -1,13 +1,10 @@
 use anyhow::Result;
-use cached::proc_macro::cached;
-use cached::SizedCache;
 use daily_strip::{build_fetcher, Sites, Strip, Url};
 use eframe::egui::{
     ahash::HashMap, CentralPanel, ComboBox, Label, Layout, TopBottomPanel, ViewportBuilder,
 };
 use egui_file_dialog::FileDialog;
 use std::{collections::hash_map::Entry::Vacant, hash::Hash, path::PathBuf, sync::Arc};
-
 use strum::IntoEnumIterator;
 use tokio::{
     fs::File,
@@ -19,14 +16,14 @@ use tokio::{
 type Fetcher = Arc<dyn daily_strip::Fetcher + Send + Sync + 'static>;
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
-enum RequestType {
+enum RequestStripType {
     Last,
     Random,
     Next(Option<usize>),
     Prev(Option<usize>),
 }
 
-impl Default for RequestType {
+impl Default for RequestStripType {
     fn default() -> Self {
         Self::Random
     }
@@ -34,7 +31,7 @@ impl Default for RequestType {
 
 #[derive(Clone, Hash, PartialEq, Eq)]
 enum Request {
-    Strip { site: Sites, ty: RequestType },
+    Strip { site: Sites, ty: RequestStripType },
     Download { path: PathBuf, url: String },
 }
 
@@ -45,7 +42,7 @@ enum Response {
 
 fn main() -> Result<(), eframe::Error> {
     let opts = eframe::NativeOptions {
-        viewport: ViewportBuilder::default().with_inner_size([800.0, 800.0]),
+        viewport: ViewportBuilder::default().with_inner_size([1024.0, 1024.0]),
         ..Default::default()
     };
 
@@ -53,8 +50,9 @@ fn main() -> Result<(), eframe::Error> {
     let (tx_res, rx_res) = channel(60);
 
     let app = App {
-        mode: RequestType::Last,
+        mode: RequestStripType::Last,
         source: Sites::default(),
+        strip: None,
         tx: tx_req.clone(),
         rx: rx_res,
         rt: Builder::new_multi_thread().enable_all().build().unwrap(),
@@ -74,8 +72,9 @@ fn main() -> Result<(), eframe::Error> {
 }
 struct App {
     file_dialog: Option<FileDialog>,
-    mode: RequestType,
+    mode: RequestStripType,
     source: Sites,
+    strip: Option<Option<Strip>>,
     tx: Sender<Request>,
     rx: Receiver<Response>,
     rt: Runtime,
@@ -86,26 +85,43 @@ impl App {
         self.rt.spawn(async move { background_task(rx, tx).await });
     }
 
-    fn get_content(&mut self) -> Option<Strip> {
-        get_content_cached(
-            Request::Strip {
-                site: self.source,
-                ty: self.mode,
+    fn force_refresh(&mut self, mode: RequestStripType) {
+        self.strip = None;
+        self.mode = mode;
+    }
+
+    fn get_content(&mut self) -> &Option<Strip> {
+        match self.strip {
+            None => {
+                let req = Request::Strip {
+                    site: self.source,
+                    ty: self.mode,
+                };
+                if self.tx.blocking_send(req).is_ok() {
+                    self.strip = Some(None);
+                }
+                &None
+            }
+
+            Some(None) => match self.rx.try_recv() {
+                Ok(Response::Strip(data)) => {
+                    self.strip = Some(data);
+                    self.strip.as_ref().unwrap()
+                }
+                _ => &None,
             },
-            &self.tx,
-            &mut self.rx,
-        )
+            Some(ref val) => val,
+        }
     }
 
     fn maybe_download_content(
         &mut self,
-        strip: &Strip,
+        url: String,
         ctx: &eframe::egui::Context,
     ) -> Option<Result<()>> {
         if let Some(file_dialog) = self.file_dialog.as_mut() {
             if let Some(path) = file_dialog.update(ctx).selected() {
                 let path = path.to_path_buf();
-                let url = strip.url.clone();
 
                 self.file_dialog = None;
 
@@ -120,9 +136,7 @@ impl App {
         None
     }
 
-    fn open_file_dialog(&mut self, strip: &Strip) {
-        let file_name = strip.file_name();
-
+    fn open_file_dialog(&mut self, file_name: String) {
         // Workaround for state never be Closed
         if self.file_dialog.is_none() {
             self.file_dialog = Some(FileDialog::new())
@@ -134,35 +148,6 @@ impl App {
         }
     }
 }
-
-#[cached(
-    ty = "SizedCache<Request, Strip>",
-    create = "{ SizedCache::with_size(10) }",
-    convert = r#"{req.clone()}"#,
-    sync_writes = true,
-    option = true
-)]
-
-fn get_content_cached(
-    req: Request,
-    tx: &Sender<Request>,
-    rx: &mut Receiver<Response>,
-) -> Option<Strip> {
-    let _ = tx.blocking_send(req);
-    rx.blocking_recv().map(|elem| {
-        if let Response::Strip(strip) = elem {
-            strip
-        } else {
-            None
-        }
-    })?
-}
-
-fn force_refresh() {
-    let mut lock = GET_CONTENT_CACHED.lock().unwrap();
-    *lock = SizedCache::with_size(10);
-}
-
 async fn background_task(mut rx: Receiver<Request>, tx: Sender<Response>) {
     let mut fetchers: HashMap<Sites, Option<Fetcher>> = HashMap::default();
 
@@ -189,7 +174,7 @@ async fn download_background(path: PathBuf, url: String) -> Result<()> {
 
 async fn get_content_background(
     site: Sites,
-    ty: RequestType,
+    ty: RequestStripType,
     fetchers: &mut HashMap<Sites, Option<Fetcher>>,
 ) -> Option<Strip> {
     if let Vacant(e) = fetchers.entry(site) {
@@ -197,10 +182,10 @@ async fn get_content_background(
     }
     if let Some(Some(fetcher)) = fetchers.get(&site) {
         return match ty {
-            RequestType::Last => fetcher.last().await.ok(),
-            RequestType::Random => fetcher.random().await.ok(),
-            RequestType::Next(Some(idx)) => fetcher.next(idx).await.ok(),
-            RequestType::Prev(Some(idx)) => fetcher.prev(idx).await.ok(),
+            RequestStripType::Last => fetcher.last().await.ok(),
+            RequestStripType::Random => fetcher.random().await.ok(),
+            RequestStripType::Next(Some(idx)) => fetcher.next(idx).await.ok(),
+            RequestStripType::Prev(Some(idx)) => fetcher.prev(idx).await.ok(),
             _ => None,
         };
     }
@@ -209,7 +194,6 @@ async fn get_content_background(
 
 impl eframe::App for App {
     fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
-        let strip = self.get_content();
         let mut sites: Vec<_> = Sites::iter().collect();
         sites.sort_by_key(|s| format!("{s}").to_lowercase());
         TopBottomPanel::bottom("my_panel").show(ctx, |ui| {
@@ -222,7 +206,7 @@ impl eframe::App for App {
                                 .selectable_value(&mut self.source, site, format!("{}", site))
                                 .changed()
                             {
-                                self.mode = RequestType::Last;
+                                self.force_refresh(RequestStripType::Last);
                             }
                         }
                     });
@@ -232,46 +216,57 @@ impl eframe::App for App {
 
                 ui.separator();
 
-                let prev_available = strip.as_ref().map(Strip::has_prev).unwrap_or(false);
-                let next_available = strip.as_ref().map(Strip::has_next).unwrap_or(false);
+                let (prev_available, next_available) = {
+                    let strip = self.get_content().as_ref();
+                    let prev_available = strip.map(Strip::has_prev).unwrap_or(false);
+                    let next_available = strip.map(Strip::has_next).unwrap_or(false);
+                    (prev_available, next_available)
+                };
 
                 ui.add_enabled_ui(prev_available, |ui| {
                     if ui.button("Prev").clicked() {
-                        self.mode = RequestType::Prev(strip.as_ref().map(|s| s.idx));
-                        force_refresh()
+                        let mode =
+                            RequestStripType::Prev(self.get_content().as_ref().map(|s| s.idx));
+                        self.force_refresh(mode);
                     }
                 });
 
                 ui.add_enabled_ui(next_available, |ui| {
                     if ui.button("Next").clicked() {
-                        self.mode = RequestType::Next(strip.as_ref().map(|s| s.idx));
-                        force_refresh()
+                        let mode =
+                            RequestStripType::Next(self.get_content().as_ref().map(|s| s.idx));
+                        self.force_refresh(mode)
                     }
                 });
 
-                ui.add_enabled_ui(next_available || strip.is_none(), |ui| {
-                    if ui.button("Last").clicked() {
-                        self.mode = RequestType::Last;
-                        force_refresh()
-                    }
-                });
+                ui.add_enabled_ui(
+                    next_available || self.get_content().as_ref().is_none(),
+                    |ui| {
+                        if ui.button("Last").clicked() {
+                            self.force_refresh(RequestStripType::Last)
+                        }
+                    },
+                );
 
                 if ui.button("Random").clicked() {
-                    self.mode = RequestType::Random;
-                    force_refresh()
+                    self.force_refresh(RequestStripType::Random)
                 }
 
-                if let Some(content) = strip.as_ref() {
+                if let Some((title, url, file_name)) = self
+                    .get_content()
+                    .as_ref()
+                    .map(|strip| (strip.title.clone(), strip.url.clone(), strip.file_name()))
+                {
                     ui.with_layout(Layout::right_to_left(eframe::egui::Align::Center), |ui| {
-                        ui.add(Label::new(&content.title).truncate());
+                        ui.add(Label::new(&title).truncate());
 
                         ui.separator();
 
                         if ui.button("Download").clicked() {
-                            self.open_file_dialog(content);
+                            self.open_file_dialog(file_name);
                         }
                     });
-                    self.maybe_download_content(content, ctx);
+                    self.maybe_download_content(url, ctx);
                 }
             });
         });
@@ -279,10 +274,9 @@ impl eframe::App for App {
         CentralPanel::default().show(ctx, |ui| {
             ui.with_layout(
                 Layout::centered_and_justified(eframe::egui::Direction::LeftToRight),
-                |ui| {
-                    if let Some(content) = strip.as_ref() {
-                        ui.image(&content.url);
-                    }
+                |ui| match self.get_content() {
+                    None => ui.spinner(),
+                    Some(content) => ui.image(&content.url),
                 },
             )
         });
