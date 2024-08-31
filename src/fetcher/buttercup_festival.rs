@@ -1,15 +1,15 @@
 use anyhow::{bail, Result};
 use scraper::{Html, Selector};
 
-use crate::{FetcherErrors, Strip, Url};
-
 use super::FetcherImpl;
+use crate::FetcherErrors::Error404;
+use crate::{FetcherErrors, Strip, StripType, Url};
 
 impl FetcherImpl {
     pub(super) async fn reload_buttercup_festival(&mut self) -> Result<()> {
         let data = reqwest::get(self.site.fetch_url()).await?.text().await?;
         let frag = Html::parse_document(&data);
-        let selector = Selector::parse("a").unwrap();
+        let selector = Selector::parse("a").map_err(|_| Error404)?;
         let mut data: Vec<_> = frag
             .select(&selector)
             .filter_map(|elem| {
@@ -21,7 +21,7 @@ impl FetcherImpl {
                             title: url.split_once('.').unwrap().0.to_owned(),
                             url: format!("{}/{}", self.site.fetch_url(), url),
                             idx,
-                            strip_type: crate::StripType::Unknown,
+                            strip_type: StripType::Unknown,
                         }
                     })
                     .ok()
@@ -41,7 +41,7 @@ impl FetcherImpl {
 
     pub(super) async fn parse_buttercup_festival_content(&self, content: &Strip) -> Result<Strip> {
         let data = reqwest::get(&content.url).await?.text().await?;
-        let url = Self::parse_first_occurency_blocking(&data, "center img", "src")
+        let url = Self::parse_first_occurrence_blocking(&data, "center img", "src")
             .ok_or(FetcherErrors::Error404)?;
 
         Ok(Strip {

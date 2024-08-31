@@ -1,7 +1,7 @@
 use anyhow::{bail, Result};
 use rss::Channel;
 
-use crate::{FetcherErrors, Strip, Url};
+use crate::{FetcherErrors, Strip, StripType, Url};
 
 use super::FetcherImpl;
 
@@ -23,7 +23,7 @@ impl FetcherImpl {
                 title: title.unwrap(),
                 url: content.unwrap(),
                 idx,
-                strip_type: crate::StripType::Unknown,
+                strip_type: StripType::Unknown,
             })
             .collect();
         match data.len() {
@@ -36,7 +36,7 @@ impl FetcherImpl {
     }
 
     pub(super) async fn parse_gt2_content(&self, content: &Strip) -> Result<Strip> {
-        let url = Self::parse_first_occurency_blocking(&content.url, "img", "src")
+        let url = Self::parse_first_occurrence_blocking(&content.url, "img", "src")
             .ok_or(FetcherErrors::Error404)?
             .replace("..", &content.title);
         Ok(Strip {

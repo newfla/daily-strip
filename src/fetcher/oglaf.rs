@@ -1,7 +1,7 @@
 use anyhow::{bail, Result};
 use rss::Channel;
 
-use crate::{FetcherErrors, Strip, Url};
+use crate::{FetcherErrors, Strip, StripType, Url};
 
 use super::FetcherImpl;
 
@@ -21,7 +21,7 @@ impl FetcherImpl {
             .map(|(name, description)| {
                 (
                     name.unwrap(),
-                    Self::parse_first_occurency_blocking(&description.unwrap(), "p a", "href"),
+                    Self::parse_first_occurrence_blocking(&description.unwrap(), "p a", "href"),
                 )
             })
             .filter(|(_, url)| url.is_some())
@@ -30,7 +30,7 @@ impl FetcherImpl {
                 title,
                 url: url.unwrap(),
                 idx,
-                strip_type: crate::StripType::Unknown,
+                strip_type: StripType::Unknown,
             })
             .collect();
         match data.len() {
@@ -44,7 +44,7 @@ impl FetcherImpl {
 
     pub(super) async fn parse_oglaf_content(&self, content: &Strip) -> Result<Strip> {
         let data = reqwest::get(&content.url).await?.text().await?;
-        let url = Self::parse_first_occurency_blocking(&data, "#strip", "src")
+        let url = Self::parse_first_occurrence_blocking(&data, "#strip", "src")
             .ok_or(FetcherErrors::Error404)?;
 
         Ok(Strip {
