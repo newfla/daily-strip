@@ -1,16 +1,16 @@
 use anyhow::{bail, Result};
 use scraper::{Html, Selector};
 
-use crate::{FetcherErrors, Strip, Url};
-
 use super::FetcherImpl;
+use crate::FetcherErrors::Error404;
+use crate::{FetcherErrors, Strip, StripType, Url};
 
 impl FetcherImpl {
     pub(super) async fn reload_cornet_comics(&mut self) -> Result<()> {
         let data = reqwest::get(self.site.fetch_url()).await?.text().await?;
         let frag = Html::parse_document(&data);
-        let selector_name = Selector::parse("span a.post-link").unwrap();
-        let selector_url = Selector::parse("a.post-link img").unwrap();
+        let selector_name = Selector::parse("span a.post-link").map_err(|_| Error404)?;
+        let selector_url = Selector::parse("a.post-link img").map_err(|_| Error404)?;
 
         let data: Vec<_> = frag
             .select(&selector_name)
@@ -27,7 +27,7 @@ impl FetcherImpl {
                         .replace("thumbs/", "")
                         .replace("_thumbnail", ""),
                 idx,
-                strip_type: crate::StripType::Unknown,
+                strip_type: StripType::Unknown,
             })
             .collect();
         match data.len() {

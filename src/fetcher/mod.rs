@@ -54,8 +54,8 @@ impl Fetcher for FetcherImpl {
             Sites::ButtercupFestival => self.reload_buttercup_festival().await,
             Sites::Achewood => self.reload_achewood().await,
             Sites::CatAndGirl => self.reload_cat_and_girl().await,
-            Sites::DieseSweeties1_0 => self.reload_diesel_sweeties_1_0().await,
-            Sites::DieseSweeties3_0 => self.reload_diesel_sweeties_3_0().await,
+            Sites::DieselSweeties1_0 => self.reload_diesel_sweeties_1_0().await,
+            Sites::DieselSweeties3_0 => self.reload_diesel_sweeties_3_0().await,
         };
         self.set_strip_type();
         res
@@ -137,7 +137,7 @@ impl FetcherImpl {
     async fn parse_content(&self, content: &Strip) -> Result<Strip> {
         match self.site {
             Sites::TurnoffUs => self.parse_turnoff_us_content(content).await,
-            Sites::MonkeyUser => self.parse_monkeyuser_content(content).await,
+            Sites::MonkeyUser => self.parse_monkey_user_content(content).await,
             Sites::BonkersWorld => self.parse_cornet_content(content).await,
             Sites::Goomics => self.parse_cornet_content(content).await,
             Sites::Xkcd => self.parse_xkcd_content(content).await,
@@ -155,12 +155,12 @@ impl FetcherImpl {
             Sites::ButtercupFestival => self.parse_buttercup_festival_content(content).await,
             Sites::Achewood => self.parse_achewood_content(content).await,
             Sites::CatAndGirl => self.parse_cat_and_girl_content(content).await,
-            Sites::DieseSweeties1_0 => self.parse_diesel_sweeties_1_0_content(content).await,
-            Sites::DieseSweeties3_0 => self.parse_diesel_sweeties_3_0_content(content).await,
+            Sites::DieselSweeties1_0 => self.parse_diesel_sweeties_1_0_content(content).await,
+            Sites::DieselSweeties3_0 => self.parse_diesel_sweeties_3_0_content(content).await,
         }
     }
 
-    fn parse_first_occurency_blocking(data: &str, selector: &str, attr: &str) -> Option<String> {
+    fn parse_first_occurrence_blocking(data: &str, selector: &str, attr: &str) -> Option<String> {
         let frag = Html::parse_document(data);
         let selector = Selector::parse(selector).unwrap();
         Some(

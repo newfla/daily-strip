@@ -1,7 +1,7 @@
 use anyhow::{bail, Result};
 use rss::Channel;
 
-use crate::{FetcherErrors, Strip, Url};
+use crate::{FetcherErrors, Strip, StripType, Url};
 
 use super::FetcherImpl;
 
@@ -29,12 +29,13 @@ impl FetcherImpl {
             })
             .enumerate()
             .map(|(idx, (title, description))| {
-                let url = Self::parse_first_occurency_blocking(&description.unwrap(), "img", "src");
+                let url =
+                    Self::parse_first_occurrence_blocking(&description.unwrap(), "img", "src");
                 Strip {
                     title: title.unwrap(),
                     url: url.unwrap(),
                     idx,
-                    strip_type: crate::StripType::Unknown,
+                    strip_type: StripType::Unknown,
                 }
             })
             .collect();

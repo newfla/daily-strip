@@ -1,6 +1,6 @@
 use anyhow::{bail, Result};
 
-use crate::{FetcherErrors, Strip, Url};
+use crate::{FetcherErrors, Strip, StripType, Url};
 
 use super::FetcherImpl;
 
@@ -11,7 +11,7 @@ impl FetcherImpl {
                 title: idx.to_string(),
                 url: format!("{}/{idx}", self.site.fetch_url()),
                 idx: idx - 1,
-                strip_type: crate::StripType::Unknown,
+                strip_type: StripType::Unknown,
             })
             .collect();
 
@@ -35,14 +35,14 @@ impl FetcherImpl {
             .await?
             .text()
             .await?;
-        let url = Self::parse_first_occurency_blocking(
+        let url = Self::parse_first_occurrence_blocking(
             &data,
             "center ~ table ~ div > table > tbody > tr td div > img",
             "src",
         )
         .ok_or(FetcherErrors::Error404)?;
 
-        let title = Self::parse_first_occurency_blocking(
+        let title = Self::parse_first_occurrence_blocking(
             &data,
             "center ~ table ~ div > table > tbody > tr td div > img",
             "title",
@@ -51,7 +51,7 @@ impl FetcherImpl {
 
         Ok(Strip {
             title,
-            // Switch to http to avoid image not loading due to wring certificates
+            // Switch to http to avoid image not loading due to wrong certificates
             url: format!("http://{}{}", self.site.homepage(), url),
             idx: content.idx,
             strip_type: content.strip_type,

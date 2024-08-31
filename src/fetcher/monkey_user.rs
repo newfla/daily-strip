@@ -1,7 +1,7 @@
 use anyhow::{bail, Result};
 use rss::Channel;
 
-use crate::{FetcherErrors, Strip, Url};
+use crate::{FetcherErrors, Strip, StripType, Url};
 
 use super::FetcherImpl;
 
@@ -21,7 +21,7 @@ impl FetcherImpl {
                 title: name.unwrap(),
                 url: link.unwrap(),
                 idx,
-                strip_type: crate::StripType::Unknown,
+                strip_type: StripType::Unknown,
             })
             .collect();
         match data.len() {
@@ -33,9 +33,9 @@ impl FetcherImpl {
         }
     }
 
-    pub(super) async fn parse_monkeyuser_content(&self, content: &Strip) -> Result<Strip> {
+    pub(super) async fn parse_monkey_user_content(&self, content: &Strip) -> Result<Strip> {
         let data = reqwest::get(&content.url).await?.text().await?;
-        let url = Self::parse_first_occurency_blocking(&data, "p img", "src")
+        let url = Self::parse_first_occurrence_blocking(&data, "p img", "src")
             .ok_or(FetcherErrors::Error404)?;
 
         Ok(Strip {

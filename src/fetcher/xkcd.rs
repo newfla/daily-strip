@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use crate::{FetcherErrors, Strip, Url};
+use crate::{FetcherErrors, Strip, StripType, Url};
 
 use super::FetcherImpl;
 
@@ -18,7 +18,7 @@ impl FetcherImpl {
                 title: idx.to_string(),
                 url: self.site.fetch_url().to_owned() + "/" + &idx.to_string(),
                 idx: last - idx,
-                strip_type: crate::StripType::Unknown,
+                strip_type: StripType::Unknown,
             })
         }
         self.posts = Some(data);

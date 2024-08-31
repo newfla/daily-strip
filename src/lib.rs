@@ -31,8 +31,8 @@ pub enum Sites {
     ButtercupFestival,
     Achewood,
     CatAndGirl,
-    DieseSweeties1_0,
-    DieseSweeties3_0,
+    DieselSweeties1_0,
+    DieselSweeties3_0,
 }
 
 impl Default for Sites {
@@ -115,14 +115,14 @@ impl Url for Sites {
             Sites::ThreeWordPhrase => "https://threewordphrase.com/archive.htm",
             Sites::ASofterWorld => "https://www.asofterworld.com/archive.php",
             Sites::ButterSafe => "https://www.buttersafe.com/archive",
-            Sites::QuestionableContent => "http://www.questionablecontent.net/QCRSS.xml",
+            Sites::QuestionableContent => "https://www.questionablecontent.net/QCRSS.xml",
             Sites::WorkChronicles => "https://workchronicles.substack.com",
             Sites::JSPowerHour => "https://www.jspowerhour.com/comics",
             Sites::ButtercupFestival => "https://www.buttercupfestival.com",
             Sites::Achewood => "https://achewood.com/archive_new.html",
             Sites::CatAndGirl => "https://catandgirl.com/archive",
-            Sites::DieseSweeties1_0 => "https://www.dieselsweeties.com/archive",
-            Sites::DieseSweeties3_0 => "https://www.dieselsweeties.com/ds-unifeed.xml",
+            Sites::DieselSweeties1_0 => "https://www.dieselsweeties.com/archive",
+            Sites::DieselSweeties3_0 => "https://www.dieselsweeties.com/ds-unifeed.xml",
         }
     }
 
@@ -147,8 +147,8 @@ impl Url for Sites {
             Sites::ButtercupFestival => "buttercupfestival.com",
             Sites::Achewood => "achewood.com",
             Sites::CatAndGirl => "catandgirl.com",
-            Sites::DieseSweeties1_0 => "dieselsweeties.com",
-            Sites::DieseSweeties3_0 => "dieselsweeties.com",
+            Sites::DieselSweeties1_0 => "dieselsweeties.com",
+            Sites::DieselSweeties3_0 => "dieselsweeties.com",
         }
     }
 }
@@ -175,8 +175,8 @@ impl Display for Sites {
             Sites::ButtercupFestival => "Buttercup Festival",
             Sites::Achewood => "achewood",
             Sites::CatAndGirl => "Cat and Girl",
-            Sites::DieseSweeties1_0 => "Diesel Sweeties #1.0",
-            Sites::DieseSweeties3_0 => "Diesel Sweeties #3.0",
+            Sites::DieselSweeties1_0 => "Diesel Sweeties #1.0",
+            Sites::DieselSweeties3_0 => "Diesel Sweeties #3.0",
         };
         write!(f, "{}", name)
     }
@@ -363,7 +363,7 @@ mod test {
 
     #[tokio::test]
     async fn test_diesel_sweeties_1_0() {
-        let fetcher = build_fetcher(crate::Sites::DieseSweeties1_0).await;
+        let fetcher = build_fetcher(crate::Sites::DieselSweeties1_0).await;
         assert!(fetcher.is_some());
         let fetcher = fetcher.unwrap();
         assert!(fetcher.last().await.is_ok());
@@ -373,7 +373,7 @@ mod test {
 
     #[tokio::test]
     async fn test_diesel_sweeties_3_0() {
-        let fetcher = build_fetcher(crate::Sites::DieseSweeties3_0).await;
+        let fetcher = build_fetcher(crate::Sites::DieselSweeties3_0).await;
         assert!(fetcher.is_some());
         let fetcher = fetcher.unwrap();
         assert!(fetcher.last().await.is_ok());
