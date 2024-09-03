@@ -64,6 +64,7 @@ pub struct Strip {
     pub url: String,
     pub idx: usize,
     strip_type: StripType,
+    pub site: Sites,
 }
 
 impl Strip {

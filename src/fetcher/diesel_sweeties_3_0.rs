@@ -36,6 +36,7 @@ impl FetcherImpl {
                     url: url.unwrap(),
                     idx,
                     strip_type: StripType::Unknown,
+                    site: self.site,
                 }
             })
             .collect();

@@ -10,8 +10,10 @@ use tokio::{
     fs::File,
     io::AsyncWriteExt,
     runtime::{Builder, Runtime},
+    select, spawn,
     sync::mpsc::{channel, Receiver, Sender},
 };
+use tokio_util::sync::CancellationToken;
 
 type Fetcher = Arc<dyn daily_strip::Fetcher + Send + Sync + 'static>;
 
@@ -105,8 +107,12 @@ impl App {
 
             Some(None) => match self.rx.try_recv() {
                 Ok(Response::Strip(data)) => {
-                    self.strip = Some(data);
-                    self.strip.as_ref().unwrap()
+                    if data.as_ref().is_some_and(|data| data.site == self.source) {
+                        self.strip = Some(data);
+                        self.strip.as_ref().unwrap()
+                    } else {
+                        &None
+                    }
                 }
                 _ => &None,
             },
@@ -149,13 +155,34 @@ impl App {
     }
 }
 async fn background_task(mut rx: Receiver<Request>, tx: Sender<Response>) {
-    let mut fetchers: HashMap<Sites, Option<Fetcher>> = HashMap::default();
+    let mut fetchers: HashMap<Sites, Fetcher> = HashMap::default();
+    let mut cancel_token = None;
 
     while let Some(req) = rx.recv().await {
         match req {
             Request::Strip { site, ty } => {
-                let content = get_content_background(site, ty, &mut fetchers).await;
-                let _ = tx.send(Response::Strip(content)).await;
+                if let Vacant(e) = fetchers.entry(site) {
+                    if let Some(val) = build_fetcher(site).await.map(|f| Arc::new(f) as Fetcher) {
+                        e.insert(val);
+                    }
+                }
+
+                let tx = tx.clone();
+
+                let fetcher = fetchers.get(&site).unwrap().clone();
+                let actual_cancel_token = CancellationToken::new();
+                if let Some(prev_token) = cancel_token.replace(actual_cancel_token.clone()) {
+                    prev_token.cancel();
+                }
+                spawn(async move {
+                    select! {
+                        _ = actual_cancel_token.cancelled() => {}
+                        content = get_content_background(ty, fetcher) => {
+                            let _ = tx.send(Response::Strip(content)).await;
+
+                        }
+                    }
+                });
             }
             Request::Download { path, url } => {
                 let res = download_background(path, url).await;
@@ -172,24 +199,14 @@ async fn download_background(path: PathBuf, url: String) -> Result<()> {
     Ok(())
 }
 
-async fn get_content_background(
-    site: Sites,
-    ty: RequestStripType,
-    fetchers: &mut HashMap<Sites, Option<Fetcher>>,
-) -> Option<Strip> {
-    if let Vacant(e) = fetchers.entry(site) {
-        e.insert(build_fetcher(site).await.map(|f| Arc::new(f) as Fetcher));
+async fn get_content_background(ty: RequestStripType, fetcher: Fetcher) -> Option<Strip> {
+    match ty {
+        RequestStripType::Last => fetcher.last().await.ok(),
+        RequestStripType::Random => fetcher.random().await.ok(),
+        RequestStripType::Next(Some(idx)) => fetcher.next(idx).await.ok(),
+        RequestStripType::Prev(Some(idx)) => fetcher.prev(idx).await.ok(),
+        _ => None,
     }
-    if let Some(Some(fetcher)) = fetchers.get(&site) {
-        return match ty {
-            RequestStripType::Last => fetcher.last().await.ok(),
-            RequestStripType::Random => fetcher.random().await.ok(),
-            RequestStripType::Next(Some(idx)) => fetcher.next(idx).await.ok(),
-            RequestStripType::Prev(Some(idx)) => fetcher.prev(idx).await.ok(),
-            _ => None,
-        };
-    }
-    None
 }
 
 impl eframe::App for App {

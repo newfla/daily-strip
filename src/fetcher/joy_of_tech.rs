@@ -20,6 +20,7 @@ impl FetcherImpl {
                     url,
                     idx,
                     strip_type: StripType::Unknown,
+                    site: self.site,
                 }
             })
             .collect();
@@ -45,6 +46,7 @@ impl FetcherImpl {
             url,
             idx: content.idx,
             strip_type: content.strip_type,
+            site: content.site,
         })
     }
 }
