@@ -28,6 +28,7 @@ impl FetcherImpl {
                         .replace("_thumbnail", ""),
                 idx,
                 strip_type: StripType::Unknown,
+                site: self.site,
             })
             .collect();
         match data.len() {

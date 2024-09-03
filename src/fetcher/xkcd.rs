@@ -19,6 +19,7 @@ impl FetcherImpl {
                 url: self.site.fetch_url().to_owned() + "/" + &idx.to_string(),
                 idx: last - idx,
                 strip_type: StripType::Unknown,
+                site: self.site,
             })
         }
         self.posts = Some(data);
@@ -36,6 +37,7 @@ impl FetcherImpl {
             url,
             idx: content.idx,
             strip_type: content.strip_type,
+            site: content.site,
         })
     }
 }

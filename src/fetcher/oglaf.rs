@@ -31,6 +31,7 @@ impl FetcherImpl {
                 url: url.unwrap(),
                 idx,
                 strip_type: StripType::Unknown,
+                site: self.site,
             })
             .collect();
         match data.len() {
@@ -52,6 +53,7 @@ impl FetcherImpl {
             url,
             idx: content.idx,
             strip_type: content.strip_type,
+            site: content.site,
         })
     }
 }

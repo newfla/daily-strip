@@ -40,6 +40,7 @@ impl FetcherImpl {
                         url,
                         idx: counter,
                         strip_type: StripType::Unknown,
+                        site: self.site,
                     });
                     counter += 1;
                 }
@@ -65,6 +66,7 @@ impl FetcherImpl {
             url,
             idx: content.idx,
             strip_type: content.strip_type,
+            site: content.site,
         })
     }
 }
