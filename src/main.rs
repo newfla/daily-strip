@@ -4,6 +4,7 @@ use eframe::egui::{
     ahash::HashMap, CentralPanel, ComboBox, Label, Layout, TopBottomPanel, ViewportBuilder,
 };
 use egui_file_dialog::FileDialog;
+use egui_theme_switcher::theme_switcher;
 use std::{collections::hash_map::Entry::Vacant, hash::Hash, path::PathBuf, sync::Arc};
 use strum::IntoEnumIterator;
 use tokio::{
@@ -269,22 +270,24 @@ impl eframe::App for App {
                     self.force_refresh(RequestStripType::Random)
                 }
 
-                if let Some((title, url, file_name)) = self
-                    .get_content()
-                    .as_ref()
-                    .map(|strip| (strip.title.clone(), strip.url.clone(), strip.file_name()))
-                {
-                    ui.with_layout(Layout::right_to_left(eframe::egui::Align::Center), |ui| {
-                        ui.add(Label::new(&title).truncate());
+                ui.with_layout(Layout::right_to_left(eframe::egui::Align::Center), |ui| {
+                    ui.add(theme_switcher());
+                    ui.separator();
 
-                        ui.separator();
-
+                    if let Some((title, url, file_name)) = self
+                        .get_content()
+                        .as_ref()
+                        .map(|strip| (strip.title.clone(), strip.url.clone(), strip.file_name()))
+                    {
                         if ui.button("Download").clicked() {
                             self.open_file_dialog(file_name);
                         }
-                    });
-                    self.maybe_download_content(url, ctx);
-                }
+
+                        ui.add(Label::new(&title).truncate());
+
+                        self.maybe_download_content(url, ctx);
+                    }
+                });
             });
         });
 

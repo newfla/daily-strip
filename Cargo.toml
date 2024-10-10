@@ -17,6 +17,7 @@ categories = ["multimedia::images"]
 anyhow = "1.0.75"
 async-trait = "0.1.74"
 eframe = "0.29.1"
+egui-theme-switcher = "0.1.0"
 egui-file-dialog = "0.7.0"
 egui_extras = {version = "0.29.1", features = ["default", "all_loaders"] }
 image = { version = "0.25.1", features = ["jpeg", "png", "gif"] } 
