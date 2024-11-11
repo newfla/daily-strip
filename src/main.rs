@@ -1,47 +1,13 @@
 use anyhow::Result;
-use daily_strip::{build_fetcher, Sites, Strip, Url};
-use eframe::egui::{
-    ahash::HashMap, CentralPanel, ComboBox, Label, Layout, TopBottomPanel, ViewportBuilder,
+use daily_strip::{
+    backend::{start_backend, Request, RequestStripType, Response},
+    Sites, Strip, Url,
 };
+use eframe::egui::{CentralPanel, ComboBox, Label, Layout, TopBottomPanel, ViewportBuilder};
 use egui_file_dialog::FileDialog;
 use egui_theme_switcher::theme_switcher;
-use std::{collections::hash_map::Entry::Vacant, hash::Hash, path::PathBuf, sync::Arc};
 use strum::IntoEnumIterator;
-use tokio::{
-    fs::File,
-    io::AsyncWriteExt,
-    runtime::{Builder, Runtime},
-    select, spawn,
-    sync::mpsc::{channel, Receiver, Sender},
-};
-use tokio_util::sync::CancellationToken;
-
-type Fetcher = Arc<dyn daily_strip::Fetcher + Send + Sync + 'static>;
-
-#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
-enum RequestStripType {
-    Last,
-    Random,
-    Next(Option<usize>),
-    Prev(Option<usize>),
-}
-
-impl Default for RequestStripType {
-    fn default() -> Self {
-        Self::Random
-    }
-}
-
-#[derive(Clone, Hash, PartialEq, Eq)]
-enum Request {
-    Strip { site: Sites, ty: RequestStripType },
-    Download { path: PathBuf, url: String },
-}
-
-enum Response {
-    Strip(Option<Strip>),
-    Download(Result<()>),
-}
+use tokio::sync::mpsc::{Receiver, Sender};
 
 fn main() -> Result<(), eframe::Error> {
     let opts = eframe::NativeOptions {
@@ -49,20 +15,15 @@ fn main() -> Result<(), eframe::Error> {
         ..Default::default()
     };
 
-    let (tx_req, rx_req) = channel(60);
-    let (tx_res, rx_res) = channel(60);
-
+    let (tx, rx) = start_backend();
     let app = App {
         mode: RequestStripType::Last,
         source: Sites::default(),
         strip: None,
-        tx: tx_req.clone(),
-        rx: rx_res,
-        rt: Builder::new_multi_thread().enable_all().build().unwrap(),
+        tx,
+        rx,
         file_dialog: Some(FileDialog::new()),
     };
-
-    app.start_background_task(rx_req, tx_res);
 
     eframe::run_native(
         "Daily Strip",
@@ -80,14 +41,9 @@ struct App {
     strip: Option<Option<Strip>>,
     tx: Sender<Request>,
     rx: Receiver<Response>,
-    rt: Runtime,
 }
 
 impl App {
-    fn start_background_task(&self, rx: Receiver<Request>, tx: Sender<Response>) {
-        self.rt.spawn(async move { background_task(rx, tx).await });
-    }
-
     fn force_refresh(&mut self, mode: RequestStripType) {
         self.strip = None;
         self.mode = mode;
@@ -153,60 +109,6 @@ impl App {
             file_dialog.config_mut().default_file_name = file_name;
             file_dialog.save_file();
         }
-    }
-}
-async fn background_task(mut rx: Receiver<Request>, tx: Sender<Response>) {
-    let mut fetchers: HashMap<Sites, Fetcher> = HashMap::default();
-    let mut cancel_token = None;
-
-    while let Some(req) = rx.recv().await {
-        match req {
-            Request::Strip { site, ty } => {
-                if let Vacant(e) = fetchers.entry(site) {
-                    if let Some(val) = build_fetcher(site).await.map(|f| Arc::new(f) as Fetcher) {
-                        e.insert(val);
-                    }
-                }
-
-                let tx = tx.clone();
-
-                let fetcher = fetchers.get(&site).unwrap().clone();
-                let actual_cancel_token = CancellationToken::new();
-                if let Some(prev_token) = cancel_token.replace(actual_cancel_token.clone()) {
-                    prev_token.cancel();
-                }
-                spawn(async move {
-                    select! {
-                        _ = actual_cancel_token.cancelled() => {}
-                        content = get_content_background(ty, fetcher) => {
-                            let _ = tx.send(Response::Strip(content)).await;
-
-                        }
-                    }
-                });
-            }
-            Request::Download { path, url } => {
-                let res = download_background(path, url).await;
-                let _ = tx.send(Response::Download(res)).await;
-            }
-        }
-    }
-}
-
-async fn download_background(path: PathBuf, url: String) -> Result<()> {
-    let data = reqwest::get(url).await?.bytes().await?;
-    let mut file = File::create(path).await?;
-    file.write_all(&data).await?;
-    Ok(())
-}
-
-async fn get_content_background(ty: RequestStripType, fetcher: Fetcher) -> Option<Strip> {
-    match ty {
-        RequestStripType::Last => fetcher.last().await.ok(),
-        RequestStripType::Random => fetcher.random().await.ok(),
-        RequestStripType::Next(Some(idx)) => fetcher.next(idx).await.ok(),
-        RequestStripType::Prev(Some(idx)) => fetcher.prev(idx).await.ok(),
-        _ => None,
     }
 }
 
