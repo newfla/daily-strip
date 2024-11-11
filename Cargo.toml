@@ -27,7 +27,7 @@ rss = "2.0.6"
 scraper = "0.21.0"
 strum = "0.26.2"
 strum_macros = "0.26.2"
-thiserror = "1.0.50"
+thiserror = "2.0.3"
 tokio = { version = "1.33.0", features = ["fs", "macros", "rt-multi-thread"]}
 tokio-util = "0.7.11"
 
