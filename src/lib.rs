@@ -5,8 +5,8 @@ use async_trait::async_trait;
 use strum_macros::EnumIter;
 use thiserror::Error;
 
-mod fetcher;
-pub use fetcher::build_fetcher;
+pub mod backend;
+pub mod fetcher;
 
 #[derive(Debug, Clone, Copy, EnumIter, Hash, PartialEq, Eq)]
 /// Supported strip sites
