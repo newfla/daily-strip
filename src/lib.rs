@@ -7,6 +7,7 @@ use thiserror::Error;
 
 pub mod backend;
 pub mod fetcher;
+pub mod frontend;
 
 #[derive(Debug, Clone, Copy, EnumIter, Hash, PartialEq, Eq)]
 /// Supported strip sites
