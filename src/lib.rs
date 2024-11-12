@@ -1,44 +1,72 @@
-use std::fmt::Display;
-
 use anyhow::Result;
 use async_trait::async_trait;
-use strum_macros::EnumIter;
+use strum::IntoEnumIterator;
+use strum_macros::{Display, EnumIter, EnumString};
 use thiserror::Error;
 
 pub mod backend;
 pub mod fetcher;
 pub mod frontend;
 
-#[derive(Debug, Clone, Copy, EnumIter, Hash, PartialEq, Eq)]
+#[derive(Debug, Display, Clone, Copy, EnumIter, EnumString, Hash, PartialEq, Eq)]
 /// Supported strip sites
 #[non_exhaustive]
 pub enum Sites {
+    #[strum(to_string = "turnoff.us")]
     TurnoffUs,
+    #[strum(to_string = "MonkeyUser")]
     MonkeyUser,
+    #[strum(to_string = "Bonkers Worls")]
     BonkersWorld,
+    #[strum(to_string = "Goomics")]
     Goomics,
+    #[strum(to_string = "xkcd")]
     Xkcd,
+    #[strum(to_string = "Dinosaur Comics")]
     DinosaurComics,
+    #[strum(to_string = "Oglaf [NSFW]")]
     Oglaf,
+    #[strum(to_string = "CTRL+ALT+DEL")]
     CadComics,
+    #[strum(to_string = "The Joy of Tech")]
     JoyOfTech,
+    #[strum(to_string = "Good Tech Things")]
     GoodTechThings,
+    #[strum(to_string = "Three Word Phrase")]
     ThreeWordPhrase,
+    #[strum(to_string = "a softer world")]
     ASofterWorld,
+    #[strum(to_string = "BUTTERSAFE")]
     ButterSafe,
+    #[strum(to_string = "Questionable Content")]
     QuestionableContent,
+    #[strum(to_string = "Work Chronicles")]
     WorkChronicles,
+    #[strum(to_string = "Junior Scientist Power Hour")]
     JSPowerHour,
+    #[strum(to_string = "Buttercup Festival")]
     ButtercupFestival,
+    #[strum(to_string = "achewood")]
     Achewood,
+    #[strum(to_string = "Cat and Girl")]
     CatAndGirl,
+    #[strum(to_string = "Diesel Sweeties #1.0")]
     DieselSweeties1_0,
+    #[strum(to_string = "Diesel Sweeties #3.0")]
     DieselSweeties3_0,
 }
 
 impl Default for Sites {
     fn default() -> Self {
         Self::TurnoffUs
+    }
+}
+
+impl Sites {
+    pub fn sites_sorted() -> Vec<Sites> {
+        let mut sites: Vec<_> = Sites::iter().collect();
+        sites.sort_by_key(|site| site.to_string().to_lowercase());
+        sites
     }
 }
 
@@ -75,6 +103,10 @@ impl Strip {
 
     pub fn has_prev(&self) -> bool {
         self.strip_type != StripType::Last && self.strip_type != StripType::Unique
+    }
+
+    pub fn is_last(&self) -> bool {
+        self.strip_type == StripType::First || self.strip_type == StripType::Unique
     }
 
     pub fn file_name(&self) -> String {
@@ -152,35 +184,6 @@ impl Url for Sites {
             Sites::DieselSweeties1_0 => "dieselsweeties.com",
             Sites::DieselSweeties3_0 => "dieselsweeties.com",
         }
-    }
-}
-
-impl Display for Sites {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let name = match self {
-            Sites::TurnoffUs => "{turnoff.us}",
-            Sites::MonkeyUser => "MonkeyUser",
-            Sites::BonkersWorld => "Bonkers Worls",
-            Sites::Goomics => "Goomics",
-            Sites::Xkcd => "xkcd",
-            Sites::DinosaurComics => "Dinosaur Comics",
-            Sites::Oglaf => "Oglaf [NSFW]",
-            Sites::CadComics => "CTRL+ALT+DEL",
-            Sites::JoyOfTech => "The Joy of Tech",
-            Sites::GoodTechThings => "Good Tech Things",
-            Sites::ThreeWordPhrase => "Three Word Phrase",
-            Sites::ASofterWorld => "a softer world",
-            Sites::ButterSafe => "BUTTERSAFE",
-            Sites::QuestionableContent => "Questionable Content",
-            Sites::WorkChronicles => "Work Chronicles",
-            Sites::JSPowerHour => "Junior Scientist Power Hour",
-            Sites::ButtercupFestival => "Buttercup Festival",
-            Sites::Achewood => "achewood",
-            Sites::CatAndGirl => "Cat and Girl",
-            Sites::DieselSweeties1_0 => "Diesel Sweeties #1.0",
-            Sites::DieselSweeties3_0 => "Diesel Sweeties #3.0",
-        };
-        write!(f, "{}", name)
     }
 }
 
