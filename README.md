@@ -6,7 +6,7 @@ Comic strips viewer
 ## Slint Frontend
 By default ```egui_frontend``` is enabled.
 
-To try out the _experimental slint frontend_ add the following: ``` --features slint_frontend --no-default-features```
+To try out the _experimental slint frontend_ add the following: ```--features slint_frontend --no-default-features```
 
 ![slint_frontend](assets/slint.png)
 
