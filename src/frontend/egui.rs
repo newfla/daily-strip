@@ -2,8 +2,10 @@ use anyhow::{anyhow, Result};
 use eframe::egui::{CentralPanel, ComboBox, Label, Layout, TopBottomPanel, ViewportBuilder};
 use egui_file_dialog::FileDialog;
 use egui_theme_switcher::theme_switcher;
-use strum::IntoEnumIterator;
-use tokio::sync::mpsc::{Receiver, Sender};
+use tokio::{
+    runtime::Handle,
+    sync::mpsc::{Receiver, Sender},
+};
 
 use crate::{
     backend::{Request, RequestStripType, Response},
@@ -16,7 +18,7 @@ use super::Runnable;
 pub struct EguiFrontend;
 
 impl Runnable for EguiFrontend {
-    fn run(tx: Sender<Request>, rx: Receiver<Response>) -> Result<()> {
+    fn run(_handle: Handle, tx: Sender<Request>, rx: Receiver<Response>) -> Result<()> {
         let opts = eframe::NativeOptions {
             viewport: ViewportBuilder::default().with_inner_size([1024.0, 1024.0]),
             ..Default::default()
@@ -123,8 +125,7 @@ impl App {
 
 impl eframe::App for App {
     fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
-        let mut sites: Vec<_> = Sites::iter().collect();
-        sites.sort_by_key(|s| format!("{s}").to_lowercase());
+        let sites: Vec<_> = Sites::sites_sorted();
         TopBottomPanel::bottom("my_panel").show(ctx, |ui| {
             ui.horizontal(|ui| {
                 ComboBox::from_label("")

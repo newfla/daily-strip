@@ -3,6 +3,7 @@ use std::thread;
 use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
 use anyhow::Result;
+use tokio::runtime::Handle;
 use tokio::{
     fs::File,
     io::AsyncWriteExt,
@@ -37,12 +38,13 @@ pub enum Request {
     Download { path: PathBuf, url: String },
 }
 
+#[derive(Debug)]
 pub enum Response {
     Strip(Option<Strip>),
     Download(Result<()>),
 }
 
-pub fn start_backend() -> (Sender<Request>, Receiver<Response>) {
+pub fn start_backend() -> (Handle, Sender<Request>, Receiver<Response>) {
     let (input, input_receiver) = channel(60);
     let (output_sender, output) = channel(60);
     let rt = Arc::new(Builder::new_multi_thread().enable_all().build().unwrap());
@@ -56,7 +58,7 @@ pub fn start_backend() -> (Sender<Request>, Receiver<Response>) {
             let _rt = rt;
         });
     });
-    (input, output)
+    (rt.handle().clone(), input, output)
 }
 
 async fn background_task(mut rx: Receiver<Request>, tx: Sender<Response>) {

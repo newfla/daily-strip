@@ -1,0 +1,106 @@
+import { Button, VerticalBox, ComboBox, StandardButton, HorizontalBox, Spinner } from "std-widgets.slint";
+export struct StripModel {
+    title: string,
+    idx: int,
+    image: image,
+    has_next: bool,
+    has_prev: bool,
+    is_last: bool,
+    filename: string,
+    url: string,
+}
+export component AppWindow inherits Window {
+
+    //ComboBox sites list
+    in property <[string]> sites <=> site_picker.model;
+    callback site_selected <=> site_picker.selected;
+    in property <string> site_current <=> site-picker.current-value;
+
+    // URL of selected site
+    in property <string> url_site <=> url_text.text;
+    callback open_url(string);  
+
+    // Current Strip
+    in property <bool> loaded;
+    in property <string> comic_title_backup;
+    in property <StripModel> strip;
+
+    // Buttons behaviour
+    callback next(string, int);
+    callback prev(string, int);
+    callback last(string);
+    callback random(string);
+    callback download(string, string);
+
+    title: "Daily Strip";
+
+    VerticalLayout {
+        alignment: center;
+        VerticalBox {
+            min-height: 500px;
+            if !loaded : Spinner {
+                indeterminate: true;
+            }
+        if loaded : comic_image:=Image {
+            min-height: 500px;
+            vertical-alignment: center;
+            source: strip.image;
+        }
+        }
+        
+        VerticalBox {
+            alignment: end;
+            HorizontalLayout {
+                alignment: space-between;
+
+                HorizontalBox {
+                    alignment: start;
+                    spacing: 5px;
+                    site_picker := ComboBox { }
+                    url_text:= Text {
+                        vertical-alignment: center;
+                        color: #5197e1;
+                        
+                        url_text_touch:= TouchArea {
+                            width: parent.width;
+                            height: parent.height;
+                            clicked => {open_url(site-picker.current-value)}
+                        }
+                    }
+                }
+                HorizontalBox {
+                    alignment: center;
+                    spacing: 5px;
+                    Button {
+                        enabled: strip.has_prev;
+                        text: "Prev";
+                        clicked => {prev(site-picker.current-value, strip.idx)}
+                    }
+                    Button { 
+                        enabled: strip.has_next;
+                        text: "Next"; 
+                        clicked => {next(site-picker.current-value, strip.idx)}}
+                    Button {
+                        enabled: !strip.is_last;
+                        text: "Last";
+                        clicked => {last(site-picker.current-value)}}
+                    Button {
+                        text: "Random";
+                        clicked => {random(site-picker.current-value)}
+                    }
+                }
+                HorizontalBox {
+                    alignment: end;
+                    spacing: 5px;
+                    comic_txt:= Text {
+                        text: strip.title;
+                        vertical-alignment: center;
+                    }
+                    Button {
+                        text: "Download";
+                    clicked => {download(strip.url,strip.filename)}}
+                }
+            }
+        }    
+    }
+}

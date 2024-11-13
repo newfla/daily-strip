@@ -1,8 +1,14 @@
 # daily-strip
 Comic strips viewer
 
-![recording_v0 1](https://github.com/newfla/daily-strip/assets/33379291/1be87bf2-ed4b-4d7c-bd6f-caa97215c6e7)
+![egui_frontend](assets/egui.gif)
 
+## Slint Frontend
+By default ```egui_frontend``` is enabled.
+
+To try out the _experimental slint frontend_ add the following: ```--features slint_frontend --no-default-features```
+
+![slint_frontend](assets/slint.png)
 
 ## Supported sites
 - [turnoff.us](https://turnoff.us)
@@ -26,3 +32,4 @@ Comic strips viewer
 - [Cat and Girl](https://catandgirl.com)
 - [DIESEL SWEETIES #1.0](https://www.dieselsweeties.com/archive)
 - [DIESEL SWEETIES #3.0](https://www.dieselsweeties.com)
+

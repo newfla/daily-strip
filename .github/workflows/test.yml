@@ -27,11 +27,19 @@ jobs:
       - name: Run tests
         run: cargo test
 
-  cargo-build:
+  cargo-build-egui:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
       - name: Build
-        run: cargo build   
+        run: cargo build
+
+  cargo-build-slint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build
+        run: cargo build --features slint_frontend --no-default-features
   

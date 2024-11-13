@@ -1,13 +1,17 @@
 use anyhow::Result;
 use daily_strip::backend::start_backend;
-use daily_strip::frontend::egui::EguiFrontend;
 use daily_strip::frontend::Runnable;
 
 fn main() -> Result<()> {
-    let (tx, rx) = start_backend();
+    let (handle, tx, rx) = start_backend();
 
-    #[cfg(feature = "egui")]
+    #[cfg(feature = "egui_frontend")]
     {
-        EguiFrontend::run(tx, rx)
+        daily_strip::frontend::egui::EguiFrontend::run(handle, tx, rx)
+    }
+
+    #[cfg(all(feature = "slint_frontend", not(feature = "egui_frontend")))]
+    {
+        daily_strip::frontend::slint::SlintFrontend::run(handle, tx, rx)
     }
 }
