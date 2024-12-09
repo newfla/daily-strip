@@ -54,6 +54,8 @@ pub enum Sites {
     DieselSweeties1_0,
     #[strum(to_string = "Diesel Sweeties #3.0")]
     DieselSweeties3_0,
+    #[strum(to_string = "Poorly Drawn Lines")]
+    PoorlyDrawnLines,
 }
 
 impl Default for Sites {
@@ -157,6 +159,7 @@ impl Url for Sites {
             Sites::CatAndGirl => "https://catandgirl.com/archive",
             Sites::DieselSweeties1_0 => "https://www.dieselsweeties.com/archive",
             Sites::DieselSweeties3_0 => "https://www.dieselsweeties.com/ds-unifeed.xml",
+            Sites::PoorlyDrawnLines => "https://poorlydrawnlines.com/feed",
         }
     }
 
@@ -183,6 +186,7 @@ impl Url for Sites {
             Sites::CatAndGirl => "catandgirl.com",
             Sites::DieselSweeties1_0 => "dieselsweeties.com",
             Sites::DieselSweeties3_0 => "dieselsweeties.com",
+            Sites::PoorlyDrawnLines => "poorlydrawnlines.com",
         }
     }
 }
@@ -379,6 +383,16 @@ mod test {
     #[tokio::test]
     async fn test_diesel_sweeties_3_0() {
         let fetcher = build_fetcher(crate::Sites::DieselSweeties3_0).await;
+        assert!(fetcher.is_some());
+        let fetcher = fetcher.unwrap();
+        assert!(fetcher.last().await.is_ok());
+        println!("{:?}", fetcher.last().await);
+        assert!(fetcher.random().await.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_parse_poorly_drawn_lines_content() {
+        let fetcher = build_fetcher(crate::Sites::PoorlyDrawnLines).await;
         assert!(fetcher.is_some());
         let fetcher = fetcher.unwrap();
         assert!(fetcher.last().await.is_ok());
