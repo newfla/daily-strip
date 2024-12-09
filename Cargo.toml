@@ -46,19 +46,19 @@ default = ["egui_frontend"]
 egui_frontend = ["eframe", "egui-theme-switcher", "egui-file-dialog", "egui_extras"]
 slint_frontend = ["slint", "slint-build", "open", "native-dialog"]
 
-# Config for 'cargo dist'
+# Config for 'dist'
 [workspace.metadata.dist]
-# The preferred cargo-dist version to use in CI (Cargo.toml SemVer syntax)
-cargo-dist-version = "0.18.0"
+# The preferred dist version to use in CI (Cargo.toml SemVer syntax)
+cargo-dist-version = "0.25.1"
 # CI backends to support
 ci = "github"
 # The installers to generate for each app
 installers = []
 # Target platforms to build apps for (Rust target-triple syntax)
 targets = ["aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-unknown-linux-gnu", "x86_64-pc-windows-msvc"]
-# Publish jobs to run in CI
+# Which actions to run on pull requests
 pr-run-mode = "upload"
-# Ignore out-of-date contents
+# Skip checking whether the specified configuration files are up to date
 allow-dirty = ["ci"]
 
 # The profile that 'cargo dist' will build with
