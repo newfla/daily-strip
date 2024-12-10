@@ -24,7 +24,7 @@ slint::include_modules!();
 pub struct SlintFrontend;
 
 impl Runnable for SlintFrontend {
-    fn run(handle: Handle, tx: Sender<Request>, rx: Receiver<Response>) -> anyhow::Result<()> {
+    fn run(handle: Handle, tx: Sender<Request>, rx: Receiver<Response>) -> Result<()> {
         let ui = AppWindow::new()?;
         // Setup ComboBox
         ui.set_sites(sites_to_model());

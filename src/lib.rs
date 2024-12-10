@@ -16,7 +16,7 @@ pub enum Sites {
     TurnoffUs,
     #[strum(to_string = "MonkeyUser")]
     MonkeyUser,
-    #[strum(to_string = "Bonkers Worls")]
+    #[strum(to_string = "Bonkers World")]
     BonkersWorld,
     #[strum(to_string = "Goomics")]
     Goomics,
@@ -58,6 +58,8 @@ pub enum Sites {
     PoorlyDrawnLines,
     #[strum(to_string = "Piled Higher and Deeper")]
     PiledHigherAndDeeper,
+    #[strum(to_string = "Gunnerkrigg Court")]
+    GunnerkriggCourt,
 }
 
 impl Default for Sites {
@@ -163,6 +165,7 @@ impl Url for Sites {
             Sites::DieselSweeties3_0 => "https://www.dieselsweeties.com/ds-unifeed.xml",
             Sites::PoorlyDrawnLines => "https://poorlydrawnlines.com/feed",
             Sites::PiledHigherAndDeeper => "https://phdcomics.com/comics/archive_list.php",
+            Sites::GunnerkriggCourt => "https://www.gunnerkrigg.com/archives",
         }
     }
 
@@ -191,6 +194,7 @@ impl Url for Sites {
             Sites::DieselSweeties3_0 => "dieselsweeties.com",
             Sites::PoorlyDrawnLines => "poorlydrawnlines.com",
             Sites::PiledHigherAndDeeper => "phdcomics.com",
+            Sites::GunnerkriggCourt => "gunnerkrigg.com",
         }
     }
 }
@@ -407,6 +411,16 @@ mod test {
     #[tokio::test]
     async fn test_parse_phd_content() {
         let fetcher = build_fetcher(crate::Sites::PiledHigherAndDeeper).await;
+        assert!(fetcher.is_some());
+        let fetcher = fetcher.unwrap();
+        assert!(fetcher.last().await.is_ok());
+        println!("{:?}", fetcher.last().await);
+        assert!(fetcher.random().await.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_parse_gunnerkrigg_court_content() {
+        let fetcher = build_fetcher(crate::Sites::GunnerkriggCourt).await;
         assert!(fetcher.is_some());
         let fetcher = fetcher.unwrap();
         assert!(fetcher.last().await.is_ok());

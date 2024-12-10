@@ -33,4 +33,5 @@ To try out the _experimental slint frontend_ add the following: ```--features sl
 - [DIESEL SWEETIES #1.0](https://www.dieselsweeties.com/archive)
 - [DIESEL SWEETIES #3.0](https://www.dieselsweeties.com)
 - [Poorly Drawn Lines](https://poorlydrawnlines.com)
-- [Piled Higher and Deeper](https://phdcomics.com/)
+- [Piled Higher and Deeper](https://phdcomics.com)
+- [Gunnerkrigg Court](https://www.gunnerkrigg.com)
