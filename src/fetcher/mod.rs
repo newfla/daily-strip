@@ -12,6 +12,7 @@ mod joy_of_tech;
 mod js_power_hour;
 mod monkey_user;
 mod oglaf;
+mod phd;
 mod poorly_drawn_lines;
 mod questionable_content;
 mod softer_world;
@@ -58,6 +59,7 @@ impl Fetcher for FetcherImpl {
             Sites::DieselSweeties1_0 => self.reload_diesel_sweeties_1_0().await,
             Sites::DieselSweeties3_0 => self.reload_diesel_sweeties_3_0().await,
             Sites::PoorlyDrawnLines => self.reload_poorly_drawn_lines().await,
+            Sites::PiledHigherAndDeeper => self.reload_phd().await,
         };
         self.set_strip_type();
         res
@@ -160,6 +162,7 @@ impl FetcherImpl {
             Sites::DieselSweeties1_0 => self.parse_diesel_sweeties_1_0_content(content).await,
             Sites::DieselSweeties3_0 => self.parse_diesel_sweeties_3_0_content(content).await,
             Sites::PoorlyDrawnLines => self.parse_poorly_drawn_lines_content(content).await,
+            Sites::PiledHigherAndDeeper => self.parse_phd_content(content).await,
         }
     }
 
