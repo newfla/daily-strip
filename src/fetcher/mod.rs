@@ -8,6 +8,7 @@ mod diesel_sweeties_1_0;
 mod diesel_sweeties_3_0;
 mod dinosaur_comics;
 mod gt2;
+mod gunnerkrigg_court;
 mod joy_of_tech;
 mod js_power_hour;
 mod monkey_user;
@@ -60,6 +61,7 @@ impl Fetcher for FetcherImpl {
             Sites::DieselSweeties3_0 => self.reload_diesel_sweeties_3_0().await,
             Sites::PoorlyDrawnLines => self.reload_poorly_drawn_lines().await,
             Sites::PiledHigherAndDeeper => self.reload_phd().await,
+            Sites::GunnerkriggCourt => self.reload_gunnerkrigg_court().await,
         };
         self.set_strip_type();
         res
@@ -163,6 +165,7 @@ impl FetcherImpl {
             Sites::DieselSweeties3_0 => self.parse_diesel_sweeties_3_0_content(content).await,
             Sites::PoorlyDrawnLines => self.parse_poorly_drawn_lines_content(content).await,
             Sites::PiledHigherAndDeeper => self.parse_phd_content(content).await,
+            Sites::GunnerkriggCourt => self.parse_gunnerkrigg_court_content(content).await,
         }
     }
 
