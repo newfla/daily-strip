@@ -94,7 +94,7 @@ impl App {
         ctx: &eframe::egui::Context,
     ) -> Option<Result<()>> {
         if let Some(file_dialog) = self.file_dialog.as_mut() {
-            if let Some(path) = file_dialog.update(ctx).selected() {
+            if let Some(path) = file_dialog.update(ctx).picked() {
                 let path = path.to_path_buf();
 
                 self.file_dialog = None;
