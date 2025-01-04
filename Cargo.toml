@@ -34,15 +34,15 @@ egui_extras = {version = "0.30.0", features = ["default", "all_loaders"], option
 image = {version = "0.25.1", features = ["jpeg", "png", "gif"]} 
 
 #slint deps
-slint = {version = "1.8.0", optional = true}
+slint = {version = "1.9.0", optional = true}
 open = { version = "5.3.0", optional = true}
 native-dialog = { version = "0.7.0", optional = true}
 [build-dependencies]
-slint-build = {version = "1.8.0", optional = true}
+slint-build = {version = "1.9.0", optional = true}
 
 
 [features]
-default = ["egui_frontend"]
+default = ["slint_frontend"]
 egui_frontend = ["eframe", "egui-theme-switcher", "egui-file-dialog", "egui_extras"]
 slint_frontend = ["slint", "slint-build", "open", "native-dialog"]
 

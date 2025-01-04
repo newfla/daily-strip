@@ -1,14 +1,14 @@
 # daily-strip
 Comic strips viewer
+![slint_frontend](assets/slint.png)
+
+
+## Egui Frontend
+By default ```slint_frontend``` is enabled.
+
+To try out the _egui frontend_ add the following: ```--features egui_frontend --no-default-features```
 
 ![egui_frontend](assets/egui.gif)
-
-## Slint Frontend
-By default ```egui_frontend``` is enabled.
-
-To try out the _experimental slint frontend_ add the following: ```--features slint_frontend --no-default-features```
-
-![slint_frontend](assets/slint.png)
 
 ## Supported sites
 - [turnoff.us](https://turnoff.us)
