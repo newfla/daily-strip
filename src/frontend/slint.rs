@@ -48,7 +48,7 @@ impl Runnable for SlintFrontend {
             // Will never explode. ComboBox values are derived by site.display()
             let site: Sites = Sites::from_str(&site).unwrap();
             let ui = selected_ui_weak.unwrap();
-            
+
             ui.set_url_site(SharedString::from(site.homepage()));
             reset_strip(&ui);
 
