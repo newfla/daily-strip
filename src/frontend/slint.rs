@@ -48,7 +48,7 @@ impl Runnable for SlintFrontend {
             // Will never explode. ComboBox values are derived by site.display()
             let site: Sites = Sites::from_str(&site).unwrap();
             let ui = selected_ui_weak.unwrap();
-
+            
             ui.set_url_site(SharedString::from(site.homepage()));
             reset_strip(&ui);
 
@@ -119,11 +119,7 @@ impl Runnable for SlintFrontend {
             listener(rx, listener_ui_weak).await;
         });
 
-        ui.set_url_site(SharedString::from(Sites::default().homepage()));
-        ui.set_site_current(SharedString::from(Sites::default().to_string()));
-        reset_strip(&ui);
-
-        last(&tx, Sites::default());
+        ui.invoke_site_selected(SharedString::from(Sites::ASofterWorld.to_string()));
 
         ui.run()?;
         Ok(())

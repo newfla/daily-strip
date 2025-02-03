@@ -24,7 +24,7 @@ mod xkcd;
 
 use anyhow::{bail, Result};
 use async_trait::async_trait;
-use rand::{thread_rng, Rng};
+use rand::{rng, Rng};
 use scraper::{Html, Selector};
 
 use crate::{Fetcher, FetcherErrors, Sites, Strip, StripType, Url};
@@ -130,10 +130,10 @@ impl FetcherImpl {
     }
 
     fn random_content(&self) -> Option<&Strip> {
-        let mut random = thread_rng();
+        let mut random = rng();
         self.posts
             .as_ref()
-            .and_then(|data| data.get(random.gen_range(0..data.len())))
+            .and_then(|data| data.get(random.random_range(0..data.len())))
     }
 
     fn idx_content(&self, idx: usize) -> Option<&Strip> {
