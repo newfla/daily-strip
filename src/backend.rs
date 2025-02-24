@@ -9,7 +9,7 @@ use tokio::{
     io::AsyncWriteExt,
     runtime::Builder,
     select, spawn,
-    sync::mpsc::{channel, Receiver, Sender},
+    sync::mpsc::{Receiver, Sender, channel},
 };
 use tokio_util::sync::CancellationToken;
 

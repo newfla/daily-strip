@@ -1,4 +1,4 @@
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use scraper::{Element, Html, Selector};
 
 use super::FetcherImpl;
