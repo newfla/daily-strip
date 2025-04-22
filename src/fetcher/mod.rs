@@ -22,9 +22,9 @@ mod turnoff_us;
 mod work_chronicles;
 mod xkcd;
 
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use async_trait::async_trait;
-use rand::{rng, Rng};
+use rand::{Rng, rng};
 use scraper::{Html, Selector};
 
 use crate::{Fetcher, FetcherErrors, Sites, Strip, StripType, Url};

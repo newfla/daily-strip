@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use eframe::egui::{CentralPanel, ComboBox, Label, Layout, TopBottomPanel, ViewportBuilder};
 use egui_file_dialog::FileDialog;
 use egui_theme_switcher::theme_switcher;
@@ -8,8 +8,8 @@ use tokio::{
 };
 
 use crate::{
-    backend::{Request, RequestStripType, Response},
     Sites, Strip, Url,
+    backend::{Request, RequestStripType, Response},
 };
 
 use super::Runnable;

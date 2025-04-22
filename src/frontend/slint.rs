@@ -12,8 +12,8 @@ use tokio::{
 };
 
 use crate::{
-    backend::{Request, RequestStripType, Response},
     Sites, Url,
+    backend::{Request, RequestStripType, Response},
 };
 
 use super::Runnable;

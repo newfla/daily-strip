@@ -201,7 +201,7 @@ impl Url for Sites {
 
 #[cfg(test)]
 mod test {
-    use crate::{fetcher::build_fetcher, Fetcher};
+    use crate::{Fetcher, fetcher::build_fetcher};
 
     #[tokio::test]
     async fn test_turnoff_us() {
