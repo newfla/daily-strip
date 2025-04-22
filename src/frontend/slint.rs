@@ -3,7 +3,7 @@
 
 use anyhow::Result;
 use image::ImageReader;
-use native_dialog::FileDialog;
+use native_dialog::DialogBuilder;
 use slint::{ComponentHandle, Image, ModelRc, Rgba8Pixel, SharedPixelBuffer, SharedString, Weak};
 use std::{io::Cursor, str::FromStr};
 use tokio::{
@@ -100,9 +100,10 @@ impl Runnable for SlintFrontend {
 
         ui.on_download(move |url, filename| {
             let ui = download_ui_weak.unwrap();
-            if let Ok(Some(path)) = FileDialog::new()
+            if let Ok(Some(path)) = DialogBuilder::file()
                 .set_filename(filename.as_str())
-                .show_save_single_file()
+                .save_single_file()
+                .show()
             {
                 let _ = download_tx.blocking_send(Request::Download {
                     path,
