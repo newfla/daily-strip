@@ -12,9 +12,9 @@ export struct StripModel {
 export component AppWindow inherits Window {
 
     //ComboBox sites list
-    in property <[string]> sites <=> site_picker.model;
+    in-out property <[string]> sites <=> site_picker.model;
     callback site_selected <=> site_picker.selected;
-    in property <string> site_current <=> site-picker.current-value;
+    in-out property <string> site_current <=> site-picker.current-value;
 
     // URL of selected site
     in property <string> url_site <=> url_text.text;
