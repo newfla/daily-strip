@@ -8,10 +8,11 @@ pub mod backend;
 pub mod fetcher;
 pub mod frontend;
 
-#[derive(Debug, Display, Clone, Copy, EnumIter, EnumString, Hash, PartialEq, Eq)]
+#[derive(Debug, Default, Display, Clone, Copy, EnumIter, EnumString, Hash, PartialEq, Eq)]
 /// Supported strip sites
 #[non_exhaustive]
 pub enum Sites {
+    #[default]
     #[strum(to_string = "turnoff.us")]
     TurnoffUs,
     #[strum(to_string = "MonkeyUser")]
@@ -60,12 +61,6 @@ pub enum Sites {
     PiledHigherAndDeeper,
     #[strum(to_string = "Gunnerkrigg Court")]
     GunnerkriggCourt,
-}
-
-impl Default for Sites {
-    fn default() -> Self {
-        Self::TurnoffUs
-    }
 }
 
 impl Sites {

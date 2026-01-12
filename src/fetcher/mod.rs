@@ -191,7 +191,7 @@ impl FetcherImpl {
                     .unwrap()
                     .replace(self.site.fetch_url(), "")
             })
-            .last()
+            .next_back()
     }
 
     fn reverse_strip_vec(data: &mut [Strip]) {

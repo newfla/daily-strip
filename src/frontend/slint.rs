@@ -133,6 +133,7 @@ fn reset_strip(ui: &AppWindow) {
     ui.set_strip(model);
     ui.set_loaded(false);
 }
+
 fn sites_to_model() -> ModelRc<SharedString> {
     let sites: Vec<_> = Sites::sites_sorted()
         .iter()
