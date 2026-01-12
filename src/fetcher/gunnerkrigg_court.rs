@@ -12,7 +12,7 @@ impl FetcherImpl {
         let selector = Selector::parse("option").map_err(|_| Error404)?;
         let limit = frag
             .select(&selector)
-            .last()
+            .next_back()
             .map(|elem| elem.attr("value").unwrap().parse::<usize>().unwrap())
             .unwrap();
         let mut data: Vec<_> = (1..=limit)

@@ -18,18 +18,13 @@ use crate::{Sites, Strip};
 
 type Fetcher = Arc<dyn crate::Fetcher + Send + Sync + 'static>;
 
-#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, Hash, PartialEq, Eq)]
 pub enum RequestStripType {
     Last,
+    #[default]
     Random,
     Next(Option<usize>),
     Prev(Option<usize>),
-}
-
-impl Default for RequestStripType {
-    fn default() -> Self {
-        Self::Random
-    }
 }
 
 #[derive(Clone, Hash, PartialEq, Eq)]
@@ -68,10 +63,10 @@ async fn background_task(mut rx: Receiver<Request>, tx: Sender<Response>) {
     while let Some(req) = rx.recv().await {
         match req {
             Request::Strip { site, ty } => {
-                if let Vacant(e) = fetchers.entry(site) {
-                    if let Some(val) = build_fetcher(site).await.map(|f| Arc::new(f) as Fetcher) {
-                        e.insert(val);
-                    }
+                if let Vacant(e) = fetchers.entry(site)
+                    && let Some(val) = build_fetcher(site).await.map(|f| Arc::new(f) as Fetcher)
+                {
+                    e.insert(val);
                 }
 
                 let tx = tx.clone();
