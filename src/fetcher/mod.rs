@@ -24,7 +24,7 @@ mod xkcd;
 
 use anyhow::{Result, bail};
 use async_trait::async_trait;
-use rand::{Rng, rng};
+use rand::{RngExt, rng};
 use scraper::{Html, Selector};
 
 use crate::{Fetcher, FetcherErrors, Sites, Strip, StripType, Url};
