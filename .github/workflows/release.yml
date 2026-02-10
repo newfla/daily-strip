@@ -137,6 +137,9 @@ jobs:
       - name: Install dependencies
         run: |
           ${{ matrix.packages_install }}
+      - name: install system dependencies (ubuntu only)
+        if: matrix.runner == 'ubuntu-22.04'
+        run: sudo apt update && sudo apt install -y pkg-config libfreetype6-dev libfontconfig1-dev
       - name: Build artifacts
         run: |
           # Actually do builds and make zips and whatnot
