@@ -39,7 +39,7 @@ impl FetcherImpl {
 
     pub(super) async fn parse_cad_content(&self, content: &Strip) -> Result<Strip> {
         let data = reqwest::get(&content.url).await?.text().await?;
-        let url = Self::parse_first_occurrence_blocking(&data, "div.arrowright + a img", "src")
+        let url = Self::parse_first_occurrence_blocking(&data, ".comicpage a img", "src")
             .ok_or(FetcherErrors::Error404)?;
 
         Ok(Strip {
