@@ -1,5 +1,5 @@
 use anyhow::{Result, anyhow};
-use eframe::egui::{CentralPanel, ComboBox, Label, Layout, TopBottomPanel, ViewportBuilder};
+use eframe::egui::{CentralPanel, ComboBox, Label, Layout, Panel, ViewportBuilder};
 use egui_file_dialog::FileDialog;
 use egui_theme_switcher::theme_switcher;
 use tokio::{
@@ -124,9 +124,9 @@ impl App {
 }
 
 impl eframe::App for App {
-    fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
+    fn ui(&mut self, ui: &mut eframe::egui::Ui, _frame: &mut eframe::Frame) {
         let sites: Vec<_> = Sites::sites_sorted();
-        TopBottomPanel::bottom("my_panel").show(ctx, |ui| {
+        Panel::bottom("my_panel").show_inside(ui, |ui| {
             ui.horizontal(|ui| {
                 ComboBox::from_label("")
                     .selected_text(format!("{:?}", self.source))
@@ -197,13 +197,13 @@ impl eframe::App for App {
 
                         ui.add(Label::new(&title).truncate());
 
-                        self.maybe_download_content(url, ctx);
+                        self.maybe_download_content(url, ui);
                     }
                 });
             });
         });
 
-        CentralPanel::default().show(ctx, |ui| {
+        CentralPanel::default().show_inside(ui, |ui| {
             ui.with_layout(
                 Layout::centered_and_justified(eframe::egui::Direction::LeftToRight),
                 |ui| match self.get_content() {
