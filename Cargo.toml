@@ -23,27 +23,35 @@ scraper = "0.25.0"
 strum = "0.28.0"
 strum_macros = "0.28.0"
 thiserror = "2.0.3"
-tokio = { version = "1.33.0", features = ["fs", "macros", "rt-multi-thread"]}
+tokio = { version = "1.33.0", features = ["fs", "macros", "rt-multi-thread"] }
 tokio-util = "0.7.11"
 
 #egui deps
-eframe = {version = "0.33.0", optional = true}
-egui-theme-switcher = {version = "0.1.10", optional = true}
-egui-file-dialog = {version = "0.12.0", optional = true}
-egui_extras = {version = "0.33.0", features = ["default", "all_loaders"], optional = true }
-image = {version = "0.25.1", features = ["jpeg", "png", "gif"]} 
+eframe = { version = "0.34.1", optional = true }
+egui-theme-switcher = { version = "0.1.11", optional = true }
+egui_extras = { version = "0.34.1", features = [
+    "default",
+    "all_loaders",
+], optional = true }
+egui-file-dialog = { version = "0.13.0", optional = true }
+image = { version = "0.25.1", features = ["jpeg", "png", "gif"] }
 
 #slint deps
-slint = {version = "1.9.0", optional = true}
-open = { version = "5.3.0", optional = true}
-native-dialog = { version = "0.9.0", optional = true}
+slint = { version = "1.9.0", optional = true }
+open = { version = "5.3.0", optional = true }
+native-dialog = { version = "0.9.0", optional = true }
 [build-dependencies]
-slint-build = {version = "1.9.0", optional = true}
+slint-build = { version = "1.9.0", optional = true }
 
 
 [features]
-default = ["slint_frontend"]
-egui_frontend = ["eframe", "egui-theme-switcher", "egui-file-dialog", "egui_extras"]
+default = ["egui_frontend"]
+egui_frontend = [
+    "eframe",
+    "egui-theme-switcher",
+    "egui-file-dialog",
+    "egui_extras",
+]
 slint_frontend = ["slint", "slint-build", "open", "native-dialog"]
 
 # The profile that 'cargo dist' will build with
