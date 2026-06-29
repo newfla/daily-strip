@@ -126,7 +126,7 @@ impl App {
 impl eframe::App for App {
     fn ui(&mut self, ui: &mut eframe::egui::Ui, _frame: &mut eframe::Frame) {
         let sites: Vec<_> = Sites::sites_sorted();
-        Panel::bottom("my_panel").show_inside(ui, |ui| {
+        Panel::bottom("my_panel").show(ui, |ui| {
             ui.horizontal(|ui| {
                 ComboBox::from_label("")
                     .selected_text(format!("{:?}", self.source))
@@ -203,7 +203,7 @@ impl eframe::App for App {
             });
         });
 
-        CentralPanel::default().show_inside(ui, |ui| {
+        CentralPanel::default().show(ui, |ui| {
             ui.with_layout(
                 Layout::centered_and_justified(eframe::egui::Direction::LeftToRight),
                 |ui| match self.get_content() {
